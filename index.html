@@ -133,35 +133,49 @@
         });
 
         // Gabungkan onAuthStateChanged menjadi satu fungsi saja
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                loginScreen.classList.add('hidden');
-                appContainer.classList.remove('hidden');
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        console.log("1. Berhasil login sebagai:", user.email);
+        
+        try {
+            currentUser = user;
+            
+            // Sembunyikan layar login
+            loginScreen.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+            console.log("2. Layar login disembunyikan");
 
-                // Tampilkan foto profil sendiri di sudut kiri atas
-                document.getElementById('my-profile-header').innerHTML = `
-                    <img src="${user.photoURL}" style="width:30px; height:30px; border-radius:50%; margin-right:10px; object-fit:cover;"> 
-                    ${user.displayName}
-                `;
+            // Update Header Profil
+            document.getElementById('my-profile-header').innerHTML = `
+                <img src="${user.photoURL}" style="width:30px; height:30px; border-radius:50%; margin-right:10px; object-fit:cover;"> 
+                ${user.displayName}
+            `;
 
-                // Simpan/Update data User ke Firestore
-                const userRef = doc(db, "users", user.uid);
-                await setDoc(userRef, {
-                    uid: user.uid,
-                    name: user.displayName,
-                    email: user.email,
-                    photoURL: user.photoURL
-                }, { merge: true });
+            console.log("3. Mencoba menyimpan profil ke Firestore...");
+            const userRef = doc(db, "users", user.uid);
+            await setDoc(userRef, {
+                uid: user.uid,
+                name: user.displayName,
+                email: user.email,
+                photoURL: user.photoURL
+            }, { merge: true });
+            
+            console.log("4. Profil berhasil disimpan di Firestore!");
 
-                // Mulai muat daftar kontak
-                loadContacts();
-            } else {
-                currentUser = null;
-                loginScreen.classList.remove('hidden');
-                appContainer.classList.add('hidden');
-            }
-        });
+            // Memuat kontak
+            loadContacts();
+            
+        } catch (error) {
+            console.error("Terjadi masalah saat memuat aplikasi:", error);
+            alert("Gagal memuat aplikasi. Cek Console (F12) untuk detailnya. Error: " + error.message);
+        }
+    } else {
+        console.log("Status: Pengguna belum login");
+        currentUser = null;
+        loginScreen.classList.remove('hidden');
+        appContainer.classList.add('hidden');
+    }
+});
 
         // ================= LOGIKA KONTAK =================
         function loadContacts() {
