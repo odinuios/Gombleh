@@ -86,36 +86,32 @@
         </div>
     </div>
 
-    <!-- Script Firebase -->
+   <!-- Script Firebase -->
     <script type="module">
-        // 1. Kumpulkan semua Import di bagian atas
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        // Tambahan: Mengimpor fungsi setPersistence dan browserLocalPersistence
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 2. Konfigurasi Firebase (JANGAN LUPA ISI INI)
         const firebaseConfig = {
-            	apiKey: "AIzaSyCx4_E64FBUDyo4RzDDWMLklRlZMvMUlFM",
-  		authDomain: "gombleh-9dea6.firebaseapp.com",
- 		projectId: "gombleh-9dea6",
-  		storageBucket: "gombleh-9dea6.firebasestorage.app",
-  		messagingSenderId: "1034286098492",
-  		appId: "1:1034286098492:web:87c81098f5ad465e187b39",
-  		measurementId: "G-L8W6KQPCY4"
+            apiKey: "AIzaSyCx4_E64FBUDyo4RzDDWMLklRlZMvMUlFM",
+            authDomain: "gombleh-9dea6.firebaseapp.com",
+            projectId: "gombleh-9dea6",
+            storageBucket: "gombleh-9dea6.firebasestorage.app",
+            messagingSenderId: "1034286098492",
+            appId: "1:1034286098492:web:87c81098f5ad465e187b39",
+            measurementId: "G-L8W6KQPCY4"
         };
 
-        // Inisialisasi Aplikasi
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // Variabel Global
         let currentUser = null;
         let currentRecipientUid = null;
         let unsubscribeChat = null;
 
-        // Elemen DOM
         const loginScreen = document.getElementById('login-screen');
         const appContainer = document.getElementById('app-container');
         const btnLogin = document.getElementById('btn-login');
@@ -127,55 +123,54 @@
 
         // ================= LOGIKA LOGIN & AUTH =================
         btnLogin.addEventListener('click', () => {
-            signInWithPopup(auth, provider).catch((error) => {
+            // Memaksa Firebase menyimpan sesi login di memori browser
+            setPersistence(auth, browserLocalPersistence)
+            .then(() => {
+                return signInWithPopup(auth, provider);
+            })
+            .then((result) => {
+                // Muncul jika pop-up berhasil tembus
+                alert("SUKSES: Google mengizinkan akses untuk email " + result.user.email + "!"); 
+            })
+            .catch((error) => {
+                // Muncul jika diblokir
+                alert("GAGAL LOGIN: " + error.message);
                 console.error("Gagal login:", error);
             });
         });
 
-        // Gabungkan onAuthStateChanged menjadi satu fungsi saja
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        console.log("1. Berhasil login sebagai:", user.email);
-        
-        try {
-            currentUser = user;
-            
-            // Sembunyikan layar login
-            loginScreen.classList.add('hidden');
-            appContainer.classList.remove('hidden');
-            console.log("2. Layar login disembunyikan");
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try {
+                    currentUser = user;
+                    
+                    loginScreen.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
 
-            // Update Header Profil
-            document.getElementById('my-profile-header').innerHTML = `
-                <img src="${user.photoURL}" style="width:30px; height:30px; border-radius:50%; margin-right:10px; object-fit:cover;"> 
-                ${user.displayName}
-            `;
+                    document.getElementById('my-profile-header').innerHTML = `
+                        <img src="${user.photoURL}" style="width:30px; height:30px; border-radius:50%; margin-right:10px; object-fit:cover;"> 
+                        ${user.displayName}
+                    `;
 
-            console.log("3. Mencoba menyimpan profil ke Firestore...");
-            const userRef = doc(db, "users", user.uid);
-            await setDoc(userRef, {
-                uid: user.uid,
-                name: user.displayName,
-                email: user.email,
-                photoURL: user.photoURL
-            }, { merge: true });
-            
-            console.log("4. Profil berhasil disimpan di Firestore!");
-
-            // Memuat kontak
-            loadContacts();
-            
-        } catch (error) {
-            console.error("Terjadi masalah saat memuat aplikasi:", error);
-            alert("Gagal memuat aplikasi. Cek Console (F12) untuk detailnya. Error: " + error.message);
-        }
-    } else {
-        console.log("Status: Pengguna belum login");
-        currentUser = null;
-        loginScreen.classList.remove('hidden');
-        appContainer.classList.add('hidden');
-    }
-});
+                    const userRef = doc(db, "users", user.uid);
+                    await setDoc(userRef, {
+                        uid: user.uid,
+                        name: user.displayName,
+                        email: user.email,
+                        photoURL: user.photoURL
+                    }, { merge: true });
+                    
+                    loadContacts();
+                    
+                } catch (error) {
+                    alert("GAGAL MEMUAT DATA: " + error.message);
+                }
+            } else {
+                currentUser = null;
+                loginScreen.classList.remove('hidden');
+                appContainer.classList.add('hidden');
+            }
+        });
 
         // ================= LOGIKA KONTAK =================
         function loadContacts() {
@@ -184,8 +179,7 @@ onAuthStateChanged(auth, async (user) => {
                 chatList.innerHTML = ''; 
                 snapshot.forEach((doc) => {
                     const userData = doc.data();
-                    
-                    if (userData.uid === currentUser.uid) return; // Jangan tampilkan diri sendiri
+                    if (userData.uid === currentUser.uid) return;
 
                     const photo = userData.photoURL || 'https://via.placeholder.com/45';
                     const chatItem = document.createElement('div');
@@ -198,7 +192,6 @@ onAuthStateChanged(auth, async (user) => {
                         </div>
                     `;
 
-                    // Saat kontak diklik
                     chatItem.addEventListener('click', () => {
                         currentRecipientUid = userData.uid;
                         chatMainHeader.innerHTML = `
@@ -232,7 +225,6 @@ onAuthStateChanged(auth, async (user) => {
                     const div = document.createElement('div');
                     
                     div.className = data.senderId === currentUser.uid ? 'message sent' : 'message received';
-                    
                     const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
                     
                     div.innerHTML = `${data.text} <span class="msg-time">${time}</span>`;
