@@ -3,23 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Chat</title>
+    <title>Web Chat Pro</title>
     <style>
         body { margin: 0; font-family: 'Segoe UI', Helvetica, sans-serif; background-color: #d1d7db; display: flex; height: 100vh; justify-content: center; align-items: center; }
         
-        /* Gaya Layar Login */
+        /* Layar Login */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #f0f2f5; display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .login-box { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
         .btn-google { background: #4285F4; color: white; border: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: bold; margin-top: 20px; margin-left: auto; margin-right: auto; }
-        .btn-google:hover { background: #357ae8; }
         .hidden { display: none !important; }
 
-        /* Gaya Aplikasi Utama */
-        .app-container { display: flex; width: 100%; max-width: 1400px; height: 100vh; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        /* Container Utama - Perbaikan UI agar flexbox penuh */
+        .app-container { display: flex; width: 100%; max-width: 1400px; height: 100vh; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2); margin: 0 auto; }
         
-        /* Sidebar Kiri (Daftar Kontak) */
-        .sidebar { width: 30%; border-right: 1px solid #d1d7db; display: flex; flex-direction: column; background: #fff; min-width: 250px; }
-        .header { height: 60px; background-color: #f0f2f5; display: flex; align-items: center; padding: 0 15px; font-weight: 600; color: #41525d; }
+        /* Sidebar (Kiri) */
+        .sidebar { flex: 0 0 30%; min-width: 300px; border-right: 1px solid #d1d7db; display: flex; flex-direction: column; background: #fff; }
+        .header { height: 60px; background-color: #f0f2f5; display: flex; align-items: center; padding: 0 15px; font-weight: 600; color: #41525d; border-bottom: 1px solid #ddd; }
+        .add-contact-box { padding: 10px; background: #fff; border-bottom: 1px solid #ddd; display: flex; gap: 5px; }
+        .add-contact-box input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
+        .add-contact-box button { padding: 8px 12px; background: #00a884; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
         .chat-list { flex: 1; overflow-y: auto; }
         .chat-item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f2f2f2; cursor: pointer; }
         .chat-item:hover { background-color: #f5f6f6; }
@@ -28,23 +31,34 @@
         .chat-name { font-weight: 500; font-size: 16px; margin: 0 0 3px 0; color: #111b21; }
         .chat-preview { font-size: 13px; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
 
-        /* Ruang Obrolan Kanan */
-        .chat-main { flex: 1; display: flex; flex-direction: column; background-color: #efeae2; }
+        /* Ruang Obrolan (Kanan) - Perbaikan agar melebar maksimal */
+        .chat-main { flex: 1 1 auto; display: flex; flex-direction: column; background-color: #efeae2; width: 100%; overflow: hidden; }
         .chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: contain; }
         
         /* Gelembung Pesan */
-        .message { max-width: 65%; padding: 8px 12px; border-radius: 7px; font-size: 14px; position: relative; line-height: 1.4; box-shadow: 0 1px 0.5px rgba(11,20,26,.13); }
+        .message { max-width: 65%; padding: 8px 12px; border-radius: 7px; font-size: 14px; position: relative; line-height: 1.4; box-shadow: 0 1px 0.5px rgba(11,20,26,.13); word-wrap: break-word; }
         .message.received { background-color: #fff; align-self: flex-start; border-top-left-radius: 0; }
         .message.sent { background-color: #d9fdd3; align-self: flex-end; border-top-right-radius: 0; }
         .msg-time { font-size: 11px; color: #667781; float: right; margin: 6px 0 -4px 10px; }
-
-        /* Area Input Ketik Pesan */
-        .chat-input-area { height: 60px; background-color: #f0f2f5; display: flex; align-items: center; padding: 0 15px; gap: 10px; }
-        .chat-input-area input { flex: 1; border: none; padding: 12px 15px; border-radius: 8px; outline: none; font-size: 15px; }
-        .btn-send { background-color: #00a884; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         
+        /* Media dalam Pesan */
+        .message img { max-width: 100%; border-radius: 5px; cursor: pointer; }
+        .message audio { max-width: 200px; height: 35px; outline: none; }
+        .message a { color: #027eb5; text-decoration: none; font-weight: bold; }
+
+        /* Area Input */
+        .chat-input-area { background-color: #f0f2f5; display: flex; align-items: center; padding: 10px 15px; gap: 10px; }
+        .chat-input-area input[type="text"] { flex: 1; border: none; padding: 12px 15px; border-radius: 8px; outline: none; font-size: 15px; }
+        
+        /* Tombol Aksi Tambahan */
+        .action-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #54656f; padding: 5px; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+        .action-btn:hover { background: #d9d9d9; }
+        .recording { color: red !important; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.3; } }
+        .btn-send { background-color: #00a884; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
         @media (max-width: 768px) {
-            .sidebar { display: none; }
+            .sidebar { display: none; } /* Tampilan Mobile disembunyikan sementara */
             .app-container { height: 100vh; }
         }
     </style>
@@ -54,7 +68,7 @@
     <!-- Layar Login -->
     <div id="login-screen">
         <div class="login-box">
-            <h2>Selamat Datang di Web Chat</h2>
+            <h2>Web Chat Pro</h2>
             <p>Silakan masuk untuk mulai bertukar pesan.</p>
             <button id="btn-login" class="btn-google">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.761H12.545z"/></svg>
@@ -65,43 +79,53 @@
 
     <!-- Aplikasi Utama -->
     <div id="app-container" class="app-container hidden">
-        <!-- Kolom Kiri: Daftar Kontak -->
+        
+        <!-- Sidebar (Kiri) -->
         <div class="sidebar">
-            <div class="header" id="my-profile-header">Chat Anda</div>
-            <div style="padding: 10px; background: #fff; border-bottom: 1px solid #ddd; display:flex; gap:5px;">
-                <input type="email" id="add-email-input" placeholder="Tambah email teman..." style="flex:1; padding:8px; border:1px solid #ccc; border-radius:5px; outline:none;">
-                <button id="btn-add-contact" style="padding:8px 12px; background:#00a884; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Tambah</button>
+            <div class="header" id="my-profile-header">Memuat...</div>
+            
+            <div class="add-contact-box">
+                <input type="email" id="add-email-input" placeholder="Tambah email teman...">
+                <button id="btn-add-contact">Tambah</button>
             </div>
 
             <div class="chat-list">
-                <!-- Kontak akan dimuat di sini oleh JavaScript -->
-            </div>
-        </div>
-            <div class="chat-list">
-                <!-- Kontak akan dimuat di sini oleh JavaScript -->
+                <!-- Kontak akan dimuat di sini -->
             </div>
         </div>
 
-        <!-- Kolom Kanan: Ruang Obrolan -->
+        <!-- Ruang Obrolan (Kanan) -->
         <div class="chat-main">
             <div class="header" id="chat-main-header">Pilih kontak untuk mulai chat</div>
-            <div class="chat-history">
-                <!-- Pesan akan dimuat di sini oleh JavaScript -->
-            </div>
+            <div class="chat-history"></div>
+            
             <div class="chat-input-area">
+                <!-- Input File Tersembunyi -->
+                <input type="file" id="file-input" style="display: none;" accept="image/*, .pdf, .doc, .docx, .xls, .xlsx">
+                
+                <!-- Tombol Lampiran & Lokasi -->
+                <button class="action-btn" id="btn-attach" title="Kirim File/Foto">📎</button>
+                <button class="action-btn" id="btn-location" title="Kirim Lokasi">📍</button>
+                
                 <input type="text" id="message-input" placeholder="Ketik pesan..." autocomplete="off"/>
+                
+                <!-- Tombol Voice Note -->
+                <button class="action-btn" id="btn-mic" title="Rekam Suara">🎤</button>
+                <!-- Tombol Kirim -->
                 <button class="btn-send" id="btn-send">Kirim</button>
             </div>
         </div>
     </div>
 
-   <!-- Script Firebase -->
+    <!-- Script Firebase -->
     <script type="module">
+        // 1. IMPORT LENGKAP (Auth, Firestore, dan Storage)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        // Tambahan: Mengimpor fungsi setPersistence dan browserLocalPersistence
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
+        // 2. KONFIGURASI FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyCx4_E64FBUDyo4RzDDWMLklRlZMvMUlFM",
             authDomain: "gombleh-9dea6.firebaseapp.com",
@@ -115,65 +139,45 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const storage = getStorage(app);
         const provider = new GoogleAuthProvider();
 
         let currentUser = null;
         let currentRecipientUid = null;
         let unsubscribeChat = null;
 
+        // Elemen DOM
         const loginScreen = document.getElementById('login-screen');
         const appContainer = document.getElementById('app-container');
-        const btnLogin = document.getElementById('btn-login');
         const chatList = document.querySelector('.chat-list');
         const chatHistory = document.querySelector('.chat-history');
         const chatMainHeader = document.getElementById('chat-main-header');
         const inputMessage = document.getElementById('message-input');
-        const btnSend = document.getElementById('btn-send');
 
-        // ================= LOGIKA LOGIN & AUTH =================
-        btnLogin.addEventListener('click', () => {
-            // Memaksa Firebase menyimpan sesi login di memori browser
+        // ================= AUTHENTICATION =================
+        document.getElementById('btn-login').addEventListener('click', () => {
             setPersistence(auth, browserLocalPersistence)
-            .then(() => {
-                return signInWithPopup(auth, provider);
-            })
-            .then((result) => {
-                // Muncul jika pop-up berhasil tembus
-                alert("SUKSES: Google mengizinkan akses untuk email " + result.user.email + "!"); 
-            })
-            .catch((error) => {
-                // Muncul jika diblokir
-                alert("GAGAL LOGIN: " + error.message);
-                console.error("Gagal login:", error);
-            });
+            .then(() => signInWithPopup(auth, provider))
+            .catch(error => alert("Gagal login: " + error.message));
         });
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                try {
-                    currentUser = user;
-                    
-                    loginScreen.classList.add('hidden');
-                    appContainer.classList.remove('hidden');
+                currentUser = user;
+                loginScreen.classList.add('hidden');
+                appContainer.classList.remove('hidden');
 
-                    document.getElementById('my-profile-header').innerHTML = `
-                        <img src="${user.photoURL}" style="width:30px; height:30px; border-radius:50%; margin-right:10px; object-fit:cover;"> 
-                        ${user.displayName}
-                    `;
+                document.getElementById('my-profile-header').innerHTML = `
+                    <img src="${user.photoURL}" style="width:30px; height:30px; border-radius:50%; margin-right:10px; object-fit:cover;"> 
+                    ${user.displayName}
+                `;
 
-                    const userRef = doc(db, "users", user.uid);
-                    await setDoc(userRef, {
-                        uid: user.uid,
-                        name: user.displayName,
-                        email: user.email,
-                        photoURL: user.photoURL
-                    }, { merge: true });
-                    
-                    loadContacts();
-                    
-                } catch (error) {
-                    alert("GAGAL MEMUAT DATA: " + error.message);
-                }
+                // Update Data Global
+                await setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid, name: user.displayName, email: user.email, photoURL: user.photoURL
+                }, { merge: true });
+                
+                loadContacts();
             } else {
                 currentUser = null;
                 loginScreen.classList.remove('hidden');
@@ -181,155 +185,206 @@
             }
         });
 
-// ================= LOGIKA KONTAK PRIVAT =================
-        const addEmailInput = document.getElementById('add-email-input');
-        const btnAddContact = document.getElementById('btn-add-contact');
-
-        // 1. Fungsi Menambahkan Kontak Berdasarkan Email
-        btnAddContact.addEventListener('click', async () => {
-            const email = addEmailInput.value.trim().toLowerCase();
+        // ================= KONTAK PRIVAT =================
+        document.getElementById('btn-add-contact').addEventListener('click', async () => {
+            const email = document.getElementById('add-email-input').value.trim().toLowerCase();
             if (!email) return;
-            if (email === currentUser.email) {
-                alert("Anda tidak bisa menambahkan email Anda sendiri!");
-                return;
-            }
+            if (email === currentUser.email) return alert("Tidak bisa menambah email sendiri.");
 
             try {
-                // Cari pengguna di database global berdasarkan email
-                const usersRef = collection(db, "users");
-                const q = query(usersRef, where("email", "==", email));
-                const querySnapshot = await getDocs(q);
+                const q = query(collection(db, "users"), where("email", "==", email));
+                const snapshot = await getDocs(q);
 
-                if (querySnapshot.empty) {
-                    alert("Pengguna dengan email tersebut belum pernah mendaftar di aplikasi ini.");
-                    return;
-                }
+                if (snapshot.empty) return alert("Email belum terdaftar di aplikasi.");
 
-                // Jika ketemu, ambil datanya
-                let friendData = null;
-                querySnapshot.forEach((doc) => {
-                    friendData = doc.data();
-                });
+                let friendData;
+                snapshot.forEach(doc => friendData = doc.data());
 
-                // Simpan ke daftar "kontak pribadi" milik pengguna yang sedang login
-                const myContactsRef = doc(db, "users", currentUser.uid, "contacts", friendData.uid);
-                await setDoc(myContactsRef, {
-                    uid: friendData.uid,
-                    name: friendData.name,
-                    email: friendData.email,
-                    photoURL: friendData.photoURL
-                });
-
-                alert("Berhasil menambahkan " + friendData.name + " ke kontak Anda!");
-                addEmailInput.value = ''; // Kosongkan input
+                await setDoc(doc(db, "users", currentUser.uid, "contacts", friendData.uid), friendData);
+                alert("Kontak ditambahkan!");
+                document.getElementById('add-email-input').value = '';
             } catch (error) {
-                console.error("Gagal menambah kontak:", error);
-                alert("Terjadi kesalahan.");
+                alert("Gagal menambah kontak.");
             }
         });
 
-        // 2. Fungsi Menampilkan Kontak Pribadi (Bukan Global Lagi)
         function loadContacts() {
-            // Kita hanya mengambil dari sub-koleksi "contacts" milik kita sendiri
             const myContactsRef = collection(db, "users", currentUser.uid, "contacts");
-            
             onSnapshot(myContactsRef, (snapshot) => {
                 chatList.innerHTML = ''; 
-                
                 if (snapshot.empty) {
-                    chatList.innerHTML = '<p style="text-align:center; color:#888; font-size:13px; margin-top:20px;">Belum ada kontak. Tambahkan via email di atas.</p>';
+                    chatList.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px; font-size:13px;">Belum ada kontak. Tambahkan via email.</p>';
                     return;
                 }
 
                 snapshot.forEach((doc) => {
-                    const userData = doc.data();
-
-                    const photo = userData.photoURL || 'https://via.placeholder.com/45';
-                    const chatItem = document.createElement('div');
-                    chatItem.className = 'chat-item';
-                    chatItem.innerHTML = `
+                    const data = doc.data();
+                    const photo = data.photoURL || 'https://via.placeholder.com/45';
+                    const div = document.createElement('div');
+                    div.className = 'chat-item';
+                    div.innerHTML = `
                         <img src="${photo}" class="avatar">
                         <div class="chat-info">
-                            <p class="chat-name">${userData.name}</p>
-                            <p class="chat-preview">${userData.email}</p>
+                            <p class="chat-name">${data.name}</p>
+                            <p class="chat-preview">${data.email}</p>
                         </div>
                     `;
-
-                    chatItem.addEventListener('click', () => {
-                        currentRecipientUid = userData.uid;
-                        chatMainHeader.innerHTML = `
-                            <img src="${photo}" style="width:35px; height:35px; border-radius:50%; margin-right:10px; object-fit:cover;">
-                            ${userData.name}
-                        `;
+                    div.addEventListener('click', () => {
+                        currentRecipientUid = data.uid;
+                        chatMainHeader.innerHTML = `<img src="${photo}" style="width:35px; height:35px; border-radius:50%; margin-right:10px; object-fit:cover;"> ${data.name}`;
                         loadChatRoom(currentRecipientUid);
                     });
-
-                    chatList.appendChild(chatItem);
+                    chatList.appendChild(div);
                 });
             });
         }
 
-        // ================= LOGIKA OBROLAN PRIVAT =================
+        // ================= OBROLAN & RENDER PESAN =================
         function getChatId(uid1, uid2) {
             return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
         }
 
         function loadChatRoom(recipientUid) {
             if (unsubscribeChat) unsubscribeChat();
-
             const chatId = getChatId(currentUser.uid, recipientUid);
-            const messagesRef = collection(db, "chats", chatId, "messages");
-            const q = query(messagesRef, orderBy("timestamp", "asc"));
+            const q = query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc"));
 
             unsubscribeChat = onSnapshot(q, (snapshot) => {
                 chatHistory.innerHTML = ''; 
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     const div = document.createElement('div');
-                    
                     div.className = data.senderId === currentUser.uid ? 'message sent' : 'message received';
+                    
                     const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
                     
-                    div.innerHTML = `${data.text} <span class="msg-time">${time}</span>`;
+                    let content = data.text;
+                    
+                    // Render berdasarkan tipe pesan
+                    if (data.type === 'image') content = `<img src="${data.url}" onclick="window.open('${data.url}', '_blank')">`;
+                    else if (data.type === 'file') content = `📄 <a href="${data.url}" target="_blank">Unduh File (${data.fileName})</a>`;
+                    else if (data.type === 'location') content = `📍 <a href="https://www.google.com/maps/search/?api=1&query=${data.lat},${data.lng}" target="_blank">Lihat Lokasi Saya di Peta</a>`;
+                    else if (data.type === 'audio') content = `<audio controls src="${data.url}"></audio>`;
+
+                    div.innerHTML = `${content} <span class="msg-time">${time}</span>`;
                     chatHistory.appendChild(div);
                 });
                 chatHistory.scrollTop = chatHistory.scrollHeight;
             });
         }
 
-        async function sendPrivateMessage(recipientUid, text) {
-            if (!text.trim() || !recipientUid) return;
-
-            const chatId = getChatId(currentUser.uid, recipientUid);
-            const messagesRef = collection(db, "chats", chatId, "messages");
-
+        // Fungsi Induk Pengirim Pesan
+        async function sendMessageToDb(payload) {
+            if (!currentRecipientUid) return alert("Pilih kontak dulu!");
+            const chatId = getChatId(currentUser.uid, currentRecipientUid);
             try {
-                await addDoc(messagesRef, {
+                await addDoc(collection(db, "chats", chatId, "messages"), {
+                    ...payload,
                     senderId: currentUser.uid,
-                    senderName: currentUser.displayName,
-                    text: text,
                     timestamp: serverTimestamp()
                 });
             } catch (error) {
-                console.error("Gagal mengirim pesan:", error);
+                console.error("Gagal kirim:", error);
             }
         }
 
-        // ================= TOMBOL KIRIM =================
-        function handleSend() {
-            const text = inputMessage.value;
-            if (!currentRecipientUid) {
-                alert("Pilih kontak terlebih dahulu dari daftar di sebelah kiri!");
-                return;
+        // 1. Kirim Teks
+        document.getElementById('btn-send').addEventListener('click', () => {
+            const text = inputMessage.value.trim();
+            if (text) {
+                sendMessageToDb({ type: 'text', text: text });
+                inputMessage.value = '';
+                inputMessage.focus();
             }
-            sendPrivateMessage(currentRecipientUid, text);
-            inputMessage.value = ''; 
-            inputMessage.focus();
-        }
+        });
+        inputMessage.addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btn-send').click(); });
 
-        btnSend.addEventListener('click', handleSend);
-        inputMessage.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleSend();
+        // 2. Kirim File & Foto
+        const btnAttach = document.getElementById('btn-attach');
+        const fileInput = document.getElementById('file-input');
+        
+        btnAttach.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            btnAttach.style.opacity = '0.5'; // Indikator proses
+            try {
+                // Upload ke Firebase Storage
+                const fileRef = ref(storage, `uploads/${Date.now()}_${file.name}`);
+                await uploadBytes(fileRef, file);
+                const url = await getDownloadURL(fileRef);
+                
+                // Tentukan tipe
+                const type = file.type.startsWith('image/') ? 'image' : 'file';
+                await sendMessageToDb({ type: type, url: url, fileName: file.name, text: '' });
+            } catch (error) {
+                alert("Gagal mengunggah file.");
+            }
+            btnAttach.style.opacity = '1';
+            fileInput.value = ''; // Reset
+        });
+
+        // 3. Kirim Lokasi (GPS)
+        document.getElementById('btn-location').addEventListener('click', () => {
+            if (!navigator.geolocation) return alert("Browser tidak mendukung GPS.");
+            
+            navigator.geolocation.getCurrentPosition((position) => {
+                sendMessageToDb({ 
+                    type: 'location', 
+                    lat: position.coords.latitude, 
+                    lng: position.coords.longitude,
+                    text: '' 
+                });
+            }, () => {
+                alert("Gagal mengambil lokasi. Pastikan izin lokasi aktif.");
+            });
+        });
+
+        // 4. Rekam Pesan Suara (Voice Note)
+        const btnMic = document.getElementById('btn-mic');
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        btnMic.addEventListener('click', async () => {
+            if (!currentRecipientUid) return alert("Pilih kontak dulu!");
+
+            if (!isRecording) {
+                // Mulai Merekam
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        audioChunks = [];
+                        
+                        // Upload Audio ke Storage
+                        const audioRef = ref(storage, `audio/${Date.now()}.webm`);
+                        await uploadBytes(audioRef, audioBlob);
+                        const url = await getDownloadURL(audioRef);
+                        
+                        await sendMessageToDb({ type: 'audio', url: url, text: '' });
+                        
+                        // Matikan mic
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btnMic.classList.add('recording'); // Efek kedap-kedip merah
+                } catch (err) {
+                    alert("Gagal mengakses mikrofon.");
+                }
+            } else {
+                // Berhenti Merekam & Kirim
+                mediaRecorder.stop();
+                isRecording = false;
+                btnMic.classList.remove('recording');
+            }
         });
 
     </script>
