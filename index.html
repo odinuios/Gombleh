@@ -90,7 +90,7 @@
     <script type="module">
         // 1. Kumpulkan semua Import di bagian atas
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // 2. Konfigurasi Firebase (JANGAN LUPA ISI INI)
@@ -127,7 +127,7 @@
 
         // ================= LOGIKA LOGIN & AUTH =================
         btnLogin.addEventListener('click', () => {
-            signInWithRedirect(auth, provider).catch((error) => {
+            signInWithPopup(auth, provider).catch((error) => {
                 console.error("Gagal login:", error);
             });
         });
