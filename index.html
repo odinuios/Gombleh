@@ -100,7 +100,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         // Tambahan: Mengimpor fungsi setPersistence dan browserLocalPersistence
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCx4_E64FBUDyo4RzDDWMLklRlZMvMUlFM",
@@ -181,14 +181,68 @@
             }
         });
 
-        // ================= LOGIKA KONTAK =================
+// ================= LOGIKA KONTAK PRIVAT =================
+        const addEmailInput = document.getElementById('add-email-input');
+        const btnAddContact = document.getElementById('btn-add-contact');
+
+        // 1. Fungsi Menambahkan Kontak Berdasarkan Email
+        btnAddContact.addEventListener('click', async () => {
+            const email = addEmailInput.value.trim().toLowerCase();
+            if (!email) return;
+            if (email === currentUser.email) {
+                alert("Anda tidak bisa menambahkan email Anda sendiri!");
+                return;
+            }
+
+            try {
+                // Cari pengguna di database global berdasarkan email
+                const usersRef = collection(db, "users");
+                const q = query(usersRef, where("email", "==", email));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    alert("Pengguna dengan email tersebut belum pernah mendaftar di aplikasi ini.");
+                    return;
+                }
+
+                // Jika ketemu, ambil datanya
+                let friendData = null;
+                querySnapshot.forEach((doc) => {
+                    friendData = doc.data();
+                });
+
+                // Simpan ke daftar "kontak pribadi" milik pengguna yang sedang login
+                const myContactsRef = doc(db, "users", currentUser.uid, "contacts", friendData.uid);
+                await setDoc(myContactsRef, {
+                    uid: friendData.uid,
+                    name: friendData.name,
+                    email: friendData.email,
+                    photoURL: friendData.photoURL
+                });
+
+                alert("Berhasil menambahkan " + friendData.name + " ke kontak Anda!");
+                addEmailInput.value = ''; // Kosongkan input
+            } catch (error) {
+                console.error("Gagal menambah kontak:", error);
+                alert("Terjadi kesalahan.");
+            }
+        });
+
+        // 2. Fungsi Menampilkan Kontak Pribadi (Bukan Global Lagi)
         function loadContacts() {
-            const usersRef = collection(db, "users");
-            onSnapshot(usersRef, (snapshot) => {
+            // Kita hanya mengambil dari sub-koleksi "contacts" milik kita sendiri
+            const myContactsRef = collection(db, "users", currentUser.uid, "contacts");
+            
+            onSnapshot(myContactsRef, (snapshot) => {
                 chatList.innerHTML = ''; 
+                
+                if (snapshot.empty) {
+                    chatList.innerHTML = '<p style="text-align:center; color:#888; font-size:13px; margin-top:20px;">Belum ada kontak. Tambahkan via email di atas.</p>';
+                    return;
+                }
+
                 snapshot.forEach((doc) => {
                     const userData = doc.data();
-                    if (userData.uid === currentUser.uid) return;
 
                     const photo = userData.photoURL || 'https://via.placeholder.com/45';
                     const chatItem = document.createElement('div');
@@ -197,7 +251,7 @@
                         <img src="${photo}" class="avatar">
                         <div class="chat-info">
                             <p class="chat-name">${userData.name}</p>
-                            <p class="chat-preview">Ketuk untuk chat...</p>
+                            <p class="chat-preview">${userData.email}</p>
                         </div>
                     `;
 
