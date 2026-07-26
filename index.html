@@ -31,7 +31,7 @@
 
         /*tambah teman dan grup */
         .fab-container { position: relative; display: inline-block; }
-        .dropdown-menu { display: none; position: absolute; right: 0; background-color: #white; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 10; border-radius: 5px; width: 160px; overflow: hidden; }
+        .dropdown-menu { display: none; position: absolute; right: 0; bottom: 50px; background-color: #fff; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 10; border-radius: 5px; width: 160px; overflow: hidden; }
         .dropdown-menu.show { display: block; }
         .dropdown-item { padding: 12px 16px; display: block; text-decoration: none; color: #333; font-size: 14px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
         .dropdown-item:hover { background-color: #f1f1f1; }
@@ -165,30 +165,32 @@
                     <div class="list-container" id="chat-list-container"></div>
                 </div>
 
-<div class="menu-box" style="align-items: flex-end;">
-    <div class="fab-container">
-        <button id="btn-main-plus" style="background: #00a884; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; font-weight: bold;">+</button>
-        <div id="dropdown-action-menu" class="dropdown-menu">
-            <button class="dropdown-item" id="menu-add-friend">Tambah Teman</button>
-            <button class="dropdown-item" id="menu-add-group">Buat Grup</button>
-        </div>
-    </div>
-</div>
+                <div id="tab-contacts" class="tab-pane">
+                    <div class="header"><span style="font-size: 20px; font-weight: bold;">Kontak</span></div>
+                    <div class="menu-box" style="align-items: flex-end;">
+                        <div class="fab-container">
+                            <button id="btn-main-plus" style="background: #00a884; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; font-weight: bold;">+</button>
+                            <div id="dropdown-action-menu" class="dropdown-menu">
+                                <button class="dropdown-item" id="menu-add-friend">Tambah Teman</button>
+                                <button class="dropdown-item" id="menu-add-group">Buat Grup</button>
+                            </div>
+                        </div>
+                    </div>
 
-<!-- Input tersembunyi yang akan muncul saat salah satu menu dipilih -->
-<div id="input-container-friend" class="menu-box hidden" style="background: #f9f9f9;">
-    <div class="menu-row">
-        <input type="email" id="add-email-input" placeholder="Email teman..." autocomplete="off">
-        <button id="btn-add-contact">Undang</button>
-    </div>
-</div>
+                    <!-- Input tersembunyi yang akan muncul saat salah satu menu dipilih -->
+                    <div id="input-container-friend" class="menu-box hidden" style="background: #f9f9f9;">
+                        <div class="menu-row">
+                            <input type="email" id="add-email-input" placeholder="Email teman..." autocomplete="off">
+                            <button id="btn-add-contact">Undang</button>
+                        </div>
+                    </div>
 
-<div id="input-container-group" class="menu-box hidden" style="background: #f9f9f9;">
-    <div class="menu-row">
-        <input type="text" id="group-name-input" placeholder="Nama Grup..." autocomplete="off">
-        <button id="btn-create-group" style="background:#005c4b;">Buat</button>
-    </div>
-</div>
+                    <div id="input-container-group" class="menu-box hidden" style="background: #f9f9f9;">
+                        <div class="menu-row">
+                            <input type="text" id="group-name-input" placeholder="Nama Grup..." autocomplete="off">
+                            <button id="btn-create-group" style="background:#005c4b;">Buat</button>
+                        </div>
+                    </div>
                     <!-- Permintaan Pertemanan -->
                     <div id="friend-requests-container" style="background: #f5f6f6;"></div>
                     <div class="list-container" id="contact-list-container"></div>
@@ -559,7 +561,6 @@
             
             document.getElementById('chat-main-header').innerHTML = `${avatarHtml} <span style="font-weight:bold; font-size: 16px;">${name}</span>`;
             
-            // Atur visibilitas tombol grup di header
             document.getElementById('btn-open-group-modal').style.display = type === 'group' ? 'block' : 'none';
             document.getElementById('btn-open-members-modal').style.display = type === 'group' ? 'block' : 'none';
 
@@ -614,8 +615,6 @@
         });
 
         // ================= KELOLA ANGGOTA & HAPUS GRUP =================
-        
-        // Membuka modal tambah anggota
         document.getElementById('btn-open-group-modal').addEventListener('click', async () => {
             if (activeTargetType !== 'group') return;
             document.getElementById('group-add-modal').style.display = 'flex';
@@ -631,9 +630,9 @@
             
             let hasAvailableContacts = false;
 
-            contactsSnap.forEach(async (docSnap) => {
+            for (const docSnap of contactsSnap.docs) {
                 const cData = docSnap.data();
-                if (cData.type === 'group' || currentMembers.includes(cData.uid)) return;
+                if (cData.type === 'group' || currentMembers.includes(cData.uid)) continue;
                 
                 hasAvailableContacts = true;
                 const uDoc = await getDoc(doc(db, "users", cData.uid));
@@ -652,7 +651,7 @@
                     });
                     listContainer.appendChild(div);
                 }
-            });
+            }
 
             if (!hasAvailableContacts) {
                 listContainer.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Tidak ada kontak yang bisa ditambahkan.</p>';
@@ -663,7 +662,6 @@
             document.getElementById('group-add-modal').style.display = 'none';
         });
 
-        // Membuka modal daftar anggota grup & opsi hapus grup
         document.getElementById('btn-open-members-modal').addEventListener('click', async () => {
             if (activeTargetType !== 'group') return;
             document.getElementById('group-members-modal').style.display = 'flex';
@@ -678,7 +676,6 @@
             const members = groupData.members || [];
             const admins = groupData.admins || [];
             
-            // Tampilkan tombol hapus grup hanya jika user saat ini adalah admin/pembuat grup
             const isAdmin = admins.includes(currentUser.uid);
             document.getElementById('group-admin-actions').style.display = isAdmin ? 'block' : 'none';
 
@@ -700,7 +697,6 @@
                         </div>
                     `;
 
-                    // Jika user saat ini admin dan target bukan diri sendiri, berikan opsi untuk mengeluarkan anggota
                     if (isAdmin && memberId !== currentUser.uid) {
                         const removeBtn = document.createElement('button');
                         removeBtn.className = 'btn-rej';
@@ -726,7 +722,6 @@
             document.getElementById('group-members-modal').style.display = 'none';
         });
 
-        // Fitur Hapus Grup Sepenuhnya (Hanya untuk Admin/Pembuat)
         document.getElementById('btn-delete-group').addEventListener('click', async () => {
             if (!confirm("Apakah Anda yakin ingin menghapus grup ini beserta seluruh riwayat obrolannya? Tindakan ini tidak dapat dibatalkan.")) return;
             
@@ -734,17 +729,14 @@
             if (!groupDoc.exists()) return;
             const members = groupDoc.data().members || [];
 
-            // Hapus referensi kontak dari setiap anggota yang tergabung di dalam grup
             for (let memberId of members) {
                 try {
                     await deleteDoc(doc(db, "users", memberId, "contacts", activeTargetId));
                 } catch(e) {}
             }
 
-            // Hapus dokumen data grup itu sendiri
             await deleteDoc(doc(db, "groups", activeTargetId));
 
-            // Tutup modal dan reset tampilan chat utama
             document.getElementById('group-members-modal').style.display = 'none';
             document.getElementById('chat-active-state').style.display = 'none';
             document.getElementById('chat-empty-state').style.display = 'flex';
@@ -884,29 +876,30 @@
             if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
             if (callSnapshotUnsub) { callSnapshotUnsub(); callSnapshotUnsub = null; }
         }
+
         const mainPlusBtn = document.getElementById('btn-main-plus');
-const actionMenu = document.getElementById('dropdown-action-menu');
-const friendInputBox = document.getElementById('input-container-friend');
-const groupInputBox = document.getElementById('input-container-group');
+        const actionMenu = document.getElementById('dropdown-action-menu');
+        const friendInputBox = document.getElementById('input-container-friend');
+        const groupInputBox = document.getElementById('input-container-group');
 
-mainPlusBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    actionMenu.classList.toggle('show');
-});
+        mainPlusBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            actionMenu.classList.toggle('show');
+        });
 
-window.addEventListener('click', () => {
-    actionMenu.classList.remove('show');
-});
+        window.addEventListener('click', () => {
+            actionMenu.classList.remove('show');
+        });
 
-document.getElementById('menu-add-friend').addEventListener('click', () => {
-    friendInputBox.classList.toggle('hidden');
-    groupInputBox.classList.add('hidden');
-});
+        document.getElementById('menu-add-friend').addEventListener('click', () => {
+            friendInputBox.classList.toggle('hidden');
+            groupInputBox.classList.add('hidden');
+        });
 
-document.getElementById('menu-add-group').addEventListener('click', () => {
-    groupInputBox.classList.toggle('hidden');
-    friendInputBox.classList.add('hidden');
-});
+        document.getElementById('menu-add-group').addEventListener('click', () => {
+            groupInputBox.classList.toggle('hidden');
+            friendInputBox.classList.add('hidden');
+        });
     </script>
 </body>
 </html>
