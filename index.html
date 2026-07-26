@@ -147,7 +147,6 @@
 </head>
 <body>
     
-    <audio id="audio-ringtone" loop src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
     <audio id="audio-notif" src="https://assets.mixkit.co/active_storage/sfx/2854/2854-preview.mp3" preload="auto"></audio>
 
     <div id="banner-container" class="banner-container"></div>
@@ -359,12 +358,31 @@
         let currentCallMode = 'voice';
         let processedMessages = new Set();
 
-        const audioRingtone = document.getElementById('audio-ringtone');
         const audioNotif = document.getElementById('audio-notif');
 
         function playNotif() { audioNotif.currentTime = 0; audioNotif.play().catch(e => {}); }
-        function playRingtone() { audioRingtone.currentTime = 0; audioRingtone.play().catch(e => {}); }
-        function stopRingtone() { audioRingtone.pause(); audioRingtone.currentTime = 0; }
+
+        // ================= PENGELOLA DERING PANGGILAN =================
+        let ringtoneAudio = null;
+
+        function playRingtone() {
+            try {
+                if (!ringtoneAudio) {
+                    ringtoneAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                    ringtoneAudio.loop = true;
+                }
+                ringtoneAudio.play().catch(e => console.log("Audio autoplay diblokir browser:", e));
+            } catch (err) {
+                console.error("Gagal memutar dering:", err);
+            }
+        }
+
+        function stopRingtone() {
+            if (ringtoneAudio) {
+                ringtoneAudio.pause();
+                ringtoneAudio.currentTime = 0;
+            }
+        }
 
         const bannerContainer = document.getElementById('banner-container');
         function showNotification(title, body, photo = 'https://via.placeholder.com/40') {
@@ -379,174 +397,146 @@
             bannerContainer.appendChild(banner);
             setTimeout(() => { if(bannerContainer.contains(banner)) banner.remove(); }, 4500);
         }
-// ================= PENGELOLA DERING PANGGILAN =================
-let ringtoneAudio = null;
 
-function playRingtone() {
-    try {
-        if (!ringtoneAudio) {
-            // Menggunakan audio dering standar
-            ringtoneAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            ringtoneAudio.loop = true;
-        }
-        ringtoneAudio.play().catch(e => console.log("Audio autoplay diblokir browser:", e));
-    } catch (err) {
-        console.error("Gagal memutar dering:", err);
-    }
-}
+        // ================= LISTENER PANGGILAN MASUK =================
+        function listenForIncomingCalls() {
+            if (!currentUser) return;
 
-function stopRingtone() {
-    if (ringtoneAudio) {
-        ringtoneAudio.pause();
-        ringtoneAudio.currentTime = 0;
-    }
-}
+            onSnapshot(query(collection(db, "calls"), where("calleeId", "==", currentUser.uid), where("status", "==", "calling")), (snapshot) => {
+                snapshot.docChanges().forEach(async (change) => {
+                    if (change.type === "added") {
+                        const callData = change.doc.data();
+                        if (callData.callerId === currentUser.uid) return; 
+                        
+                        currentCallDocId = change.doc.id;
+                        currentCallMode = callData.callMode || 'voice';
+                        
+                        document.getElementById('incoming-caller-name').innerText = callData.callerName;
+                        document.getElementById('incoming-call-type').innerText = currentCallMode === 'video' ? "Panggilan Video Masuk..." : "Panggilan Suara Masuk...";
+                        
+                        document.getElementById('incoming-call-modal').style.display = 'flex';
+                        
+                        playRingtone();
+                        if (typeof showNotification === 'function') {
+                            showNotification("Panggilan Masuk", `${callData.callerName} memanggil Anda...`, 'https://via.placeholder.com/40');
+                        }
 
-// ================= LISTENER PANGGILAN MASUK =================
-function listenForIncomingCalls() {
-    if (!currentUser) return;
-
-    onSnapshot(query(collection(db, "calls"), where("calleeId", "==", currentUser.uid), where("status", "==", "calling")), (snapshot) => {
-        snapshot.docChanges().forEach(async (change) => {
-            if (change.type === "added") {
-                const callData = change.doc.data();
-                if (callData.callerId === currentUser.uid) return; 
-                
-                currentCallDocId = change.doc.id;
-                currentCallMode = callData.callMode || 'voice';
-                
-                document.getElementById('incoming-caller-name').innerText = callData.callerName;
-                document.getElementById('incoming-call-type').innerText = currentCallMode === 'video' ? "Panggilan Video Masuk..." : "Panggilan Suara Masuk...";
-                
-                // Tampilkan modal panggilan masuk
-                document.getElementById('incoming-call-modal').style.display = 'flex';
-                
-                // Nyalakan suara dering dan banner
-                playRingtone();
-                if (typeof showNotification === 'function') {
-                    showNotification("Panggilan Masuk", `${callData.callerName} memanggil Anda...`, 'https://via.placeholder.com/40');
-                }
-
-                // Pantau jika penelepon membatalkan panggilan
-                const unsubWatch = onSnapshot(doc(db, "calls", currentCallDocId), (ds) => {
-                    if (!ds.exists() || ds.data().status !== 'calling') {
-                        stopRingtone(); 
-                        document.getElementById('incoming-call-modal').style.display = 'none'; 
-                        unsubWatch();
+                        const unsubWatch = onSnapshot(doc(db, "calls", currentCallDocId), (ds) => {
+                            if (!ds.exists() || ds.data().status !== 'calling') {
+                                stopRingtone(); 
+                                document.getElementById('incoming-call-modal').style.display = 'none'; 
+                                unsubWatch();
+                            }
+                        });
                     }
                 });
-            }
-        });
-    });
-}
+            });
+        }
         
-// ================= PENANGANAN LAMPIRAN (FOTO, KAMERA, FILE, LOKASI) =================
-const btnAttach = document.getElementById('btn-attach');
-const attachMenu = document.getElementById('attach-menu');
-const inputPhoto = document.getElementById('input-photo');
-const inputCamera = document.getElementById('input-camera');
-const inputFile = document.getElementById('input-file');
+        // ================= PENANGANAN LAMPIRAN (FOTO, KAMERA, FILE, LOKASI) =================
+        const btnAttach = document.getElementById('btn-attach');
+        const attachMenu = document.getElementById('attach-menu');
+        const inputPhoto = document.getElementById('input-photo');
+        const inputCamera = document.getElementById('input-camera');
+        const inputFile = document.getElementById('input-file');
 
-btnAttach.addEventListener('click', (e) => {
-    e.stopPropagation();
-    attachMenu.classList.toggle('show');
-});
-
-window.addEventListener('click', () => {
-    if (attachMenu && attachMenu.classList.contains('show')) attachMenu.classList.remove('show');
-});
-
-document.getElementById('attach-photo').addEventListener('click', () => inputPhoto.click());
-document.getElementById('attach-camera').addEventListener('click', () => inputCamera.click());
-document.getElementById('attach-file').addEventListener('click', () => inputFile.click());
-
-async function handleAttachment(e) {
-    const file = e.target.files[0];
-    if (!file || !activeTargetId) return;
-
-    const inputId = e.target.id;
-    const isImage = (inputId === 'input-photo' || inputId === 'input-camera');
-    const msgType = isImage ? 'image' : 'file';
-    const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
-    
-    const originalBtnText = btnAttach.innerText;
-    btnAttach.innerText = "⏳";
-    btnAttach.disabled = true;
-
-    try {
-        const safeFileName = file.name || (isImage ? "foto.jpg" : "file_lampiran");
-
-        // Konfigurasi Cloudinary Anda
-        const CLOUD_NAME = "jgcuvsst"; // Ganti dengan Cloud Name Anda dari Cloudinary
-        const UPLOAD_PRESET = "gombleh"; // Ganti dengan Upload Preset Anda (pastikan mode unsigned)
-
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("upload_preset", UPLOAD_PRESET);
-
-        // Kirim file langsung ke API Cloudinary
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
-            method: "POST",
-            body: formData
+        btnAttach.addEventListener('click', (e) => {
+            e.stopPropagation();
+            attachMenu.classList.toggle('show');
         });
 
-        const data = await response.json();
-        if (!data.secure_url) {
-            throw new Error("Gagal mengunggah ke Cloudinary");
+        window.addEventListener('click', () => {
+            if (attachMenu && attachMenu.classList.contains('show')) attachMenu.classList.remove('show');
+        });
+
+        document.getElementById('attach-photo').addEventListener('click', () => inputPhoto.click());
+        document.getElementById('attach-camera').addEventListener('click', () => inputCamera.click());
+        document.getElementById('attach-file').addEventListener('click', () => inputFile.click());
+
+        async function handleAttachment(e) {
+            const file = e.target.files[0];
+            if (!file || !activeTargetId) return;
+
+            const inputId = e.target.id;
+            const isImage = (inputId === 'input-photo' || inputId === 'input-camera');
+            const msgType = isImage ? 'image' : 'file';
+            const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
+            
+            const originalBtnText = btnAttach.innerText;
+            btnAttach.innerText = "⏳";
+            btnAttach.disabled = true;
+
+            try {
+                const safeFileName = file.name || (isImage ? "foto.jpg" : "file_lampiran");
+
+                const CLOUD_NAME = "jgcuvsst"; 
+                const UPLOAD_PRESET = "gombleh"; 
+
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("upload_preset", UPLOAD_PRESET);
+
+                const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (!data.secure_url) {
+                    throw new Error("Gagal mengunggah ke Cloudinary");
+                }
+
+                const fileUrl = data.secure_url;
+
+                await addDoc(collection(db, "chats", chatId, "messages"), {
+                    senderId: currentUser.uid,
+                    senderName: currentUser.displayName,
+                    text: isImage ? '📷 Foto' : `📄 ${safeFileName}`,
+                    fileUrl: fileUrl,
+                    fileName: safeFileName,
+                    type: msgType,
+                    status: 'sent',
+                    timestamp: serverTimestamp()
+                });
+            } catch (error) {
+                console.error("Gagal mengirim lampiran:", error);
+                alert("Gagal mengunggah file ke Cloudinary. Periksa Cloud Name dan Upload Preset Anda.");
+            } finally {
+                btnAttach.innerText = "📎";
+                btnAttach.disabled = false;
+                e.target.value = '';
+            }
         }
 
-        const fileUrl = data.secure_url;
+        inputPhoto.addEventListener('change', handleAttachment);
+        inputCamera.addEventListener('change', handleAttachment);
+        inputFile.addEventListener('change', handleAttachment);
 
-        // Simpan URL dari Cloudinary ke Firestore
-        await addDoc(collection(db, "chats", chatId, "messages"), {
-            senderId: currentUser.uid,
-            senderName: currentUser.displayName,
-            text: isImage ? '📷 Foto' : `📄 ${safeFileName}`,
-            fileUrl: fileUrl,
-            fileName: safeFileName,
-            type: msgType,
-            status: 'sent',
-            timestamp: serverTimestamp()
+        document.getElementById('attach-location').addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                alert("Geolokasi tidak didukung di browser Anda.");
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                if (!activeTargetId) return;
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const locationLink = `https://www.google.com/maps?q=${lat},${lon}`;
+                const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
+                
+                await addDoc(collection(db, "chats", chatId, "messages"), {
+                    senderId: currentUser.uid,
+                    senderName: currentUser.displayName,
+                    text: locationLink,
+                    type: 'location',
+                    status: 'sent',
+                    timestamp: serverTimestamp()
+                });
+            }, () => {
+                alert("Gagal mengambil lokasi. Pastikan izin lokasi diberikan.");
+            });
         });
-    } catch (error) {
-        console.error("Gagal mengirim lampiran:", error);
-        alert("Gagal mengunggah file ke Cloudinary. Periksa Cloud Name dan Upload Preset Anda.");
-    } finally {
-        btnAttach.innerText = "📎";
-        btnAttach.disabled = false;
-        e.target.value = '';
-    }
-}
 
-inputPhoto.addEventListener('change', handleAttachment);
-inputCamera.addEventListener('change', handleAttachment);
-inputFile.addEventListener('change', handleAttachment);
-
-// Fitur Kirim Lokasi yang disempurnakan
-document.getElementById('attach-location').addEventListener('click', () => {
-    if (!navigator.geolocation) {
-        alert("Geolokasi tidak didukung di browser Anda.");
-        return;
-    }
-    navigator.geolocation.getCurrentPosition(async (position) => {
-        if (!activeTargetId) return;
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-        const locationLink = `https://www.google.com/maps?q=${lat},${lon}`;
-        const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
-        
-        await addDoc(collection(db, "chats", chatId, "messages"), {
-            senderId: currentUser.uid,
-            senderName: currentUser.displayName,
-            text: locationLink,
-            type: 'location',
-            status: 'sent',
-            timestamp: serverTimestamp()
-        });
-    }, () => {
-        alert("Gagal mengambil lokasi. Pastikan izin lokasi diberikan.");
-    });
-});
         const loginScreen = document.getElementById('login-screen');
         const appContainer = document.getElementById('app-container');
         const chatListContainer = document.getElementById('chat-list-container');
@@ -790,63 +780,62 @@ document.getElementById('attach-location').addEventListener('click', () => {
             
             unsubscribeChat = onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc")), (snapshot) => {
                 chatHistory.innerHTML = '';
-snapshot.forEach(docSnap => {
-    const msg = docSnap.data();
-    const isMe = msg.senderId === currentUser.uid;
-    
-    if (!isMe && msg.status !== 'read') {
-        updateDoc(docSnap.ref, { status: 'read' });
-    }
+                snapshot.forEach(docSnap => {
+                    const msg = docSnap.data();
+                    const isMe = msg.senderId === currentUser.uid;
+                    
+                    if (!isMe && msg.status !== 'read') {
+                        updateDoc(docSnap.ref, { status: 'read' });
+                    }
 
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
-    
-    let senderInfo = '';
-    if (!isMe && type === 'group') {
-        senderInfo = `<div class="msg-sender">${msg.senderName}</div>`;
-    }
-    
-    let tickHtml = '';
-    if (isMe && type === 'private') {
-        if (msg.status === 'read') tickHtml = `<span class="msg-status tick-read">✓✓</span>`;
-        else if (msg.status === 'delivered') tickHtml = `<span class="msg-status tick-delivered">✓✓</span>`;
-        else tickHtml = `<span class="msg-status tick-sent">✓</span>`;
-    }
-    
-    const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
+                    
+                    let senderInfo = '';
+                    if (!isMe && type === 'group') {
+                        senderInfo = `<div class="msg-sender">${msg.senderName}</div>`;
+                    }
+                    
+                    let tickHtml = '';
+                    if (isMe && type === 'private') {
+                        if (msg.status === 'read') tickHtml = `<span class="msg-status tick-read">✓✓</span>`;
+                        else if (msg.status === 'delivered') tickHtml = `<span class="msg-status tick-delivered">✓✓</span>`;
+                        else tickHtml = `<span class="msg-status tick-sent">✓</span>`;
+                    }
+                    
+                    const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
-    // LOGIKA PENAMPILAN BERDASARKAN TIPE
-    let contentHtml = '';
-    if (msg.type === 'image') {
-        contentHtml = `
-            <img src="${msg.fileUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; cursor: pointer; display: block;" 
-                 onclick="window.open('${msg.fileUrl}', '_blank')" alt="Foto">`;
-    } 
-    else if (msg.type === 'file') {
-        contentHtml = `
-            <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(0,0,0,0.1);">
-                <span style="font-size: 24px;">📄</span>
-                <a href="${msg.fileUrl}" target="_blank" download="${msg.fileName}" style="color: #00766c; text-decoration: none; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" title="Unduh File">
-                    ${msg.fileName}
-                </a>
-            </div>`;
-    }
-    else if (msg.type === 'location') {
-        contentHtml = `
-            <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(0,0,0,0.1);">
-                <a href="${msg.text}" target="_blank" style="color: #00766c; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 5px;">
-                    📍 Buka Lokasi di Maps
-                </a>
-            </div>`;
-    } 
-    else {
-        contentHtml = `<span style="white-space: pre-wrap; word-break: break-word;">${msg.text}</span>`;
-    }
+                    let contentHtml = '';
+                    if (msg.type === 'image') {
+                        contentHtml = `
+                            <img src="${msg.fileUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; cursor: pointer; display: block;" 
+                                 onclick="window.open('${msg.fileUrl}', '_blank')" alt="Foto">`;
+                    } 
+                    else if (msg.type === 'file') {
+                        contentHtml = `
+                            <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(0,0,0,0.1);">
+                                <span style="font-size: 24px;">📄</span>
+                                <a href="${msg.fileUrl}" target="_blank" download="${msg.fileName}" style="color: #00766c; text-decoration: none; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" title="Unduh File">
+                                    ${msg.fileName}
+                                </a>
+                            </div>`;
+                    }
+                    else if (msg.type === 'location') {
+                        contentHtml = `
+                            <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(0,0,0,0.1);">
+                                <a href="${msg.text}" target="_blank" style="color: #00766c; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+                                    📍 Buka Lokasi di Maps
+                                </a>
+                            </div>`;
+                    } 
+                    else {
+                        contentHtml = `<span style="white-space: pre-wrap; word-break: break-word;">${msg.text}</span>`;
+                    }
 
-    msgDiv.innerHTML = `${senderInfo}${contentHtml}<div class="msg-time-container"><span class="msg-time">${time}</span>${tickHtml}</div>`;
-    
-    chatHistory.appendChild(msgDiv);
-});
+                    msgDiv.innerHTML = `${senderInfo}${contentHtml}<div class="msg-time-container"><span class="msg-time">${time}</span>${tickHtml}</div>`;
+                    
+                    chatHistory.appendChild(msgDiv);
+                });
                 chatHistory.scrollTop = chatHistory.scrollHeight;
             });
         }
@@ -1086,100 +1075,76 @@ snapshot.forEach(docSnap => {
         document.getElementById('btn-start-voice-call').addEventListener('click', () => startCall('voice'));
         document.getElementById('btn-start-video-call').addEventListener('click', () => startCall('video'));
 
-        function listenForIncomingCalls() {
-            onSnapshot(query(collection(db, "calls"), where("calleeId", "==", currentUser.uid), where("status", "==", "calling")), (snapshot) => {
-                snapshot.docChanges().forEach(async (change) => {
-                    if (change.type === "added") {
-                        const callData = change.doc.data();
-                        if(callData.callerId === currentUser.uid) return; 
-                        currentCallDocId = change.doc.id;
-                        currentCallMode = callData.callMode || 'voice';
-                        document.getElementById('incoming-caller-name').innerText = callData.callerName;
-                        document.getElementById('incoming-call-type').innerText = currentCallMode === 'video' ? "Panggilan Video Masuk..." : "Panggilan Suara Masuk...";
-                        
-                        document.getElementById('incoming-call-modal').style.display = 'flex';
-                        playRingtone();
+        // ================= PENERIMA PANGGILAN (CALLEE) =================
+        async function acceptIncomingCall() {
+            document.getElementById('active-call-modal').style.display = 'flex';
+            document.getElementById('active-call-status').innerText = "Menghubungkan...";
 
-                        const unsubWatch = onSnapshot(doc(db, "calls", currentCallDocId), (ds) => {
-                            if (!ds.exists() || ds.data().status !== 'calling') {
-                                stopRingtone(); document.getElementById('incoming-call-modal').style.display = 'none'; unsubWatch();
-                            }
-                        });
-                    }
+            if (currentCallMode === 'video') { 
+                document.getElementById('local-video').style.display = 'block'; 
+                document.getElementById('remote-video').style.display = 'block'; 
+                document.getElementById('active-call-avatar').style.display = 'none'; 
+            } else { 
+                document.getElementById('local-video').style.display = 'none'; 
+                document.getElementById('remote-video').style.display = 'none'; 
+                document.getElementById('active-call-avatar').style.display = 'block'; 
+            }
+
+            pc = new RTCPeerConnection(servers);
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia(currentCallMode === 'video' ? { audio: true, video: true } : { audio: true, video: false });
+                if (currentCallMode === 'video') document.getElementById('local-video').srcObject = localStream;
+                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+            } catch (e) {
+                alert("Akses media kamera/mikrofon ditolak.");
+                stopCallCleanup();
+                return;
+            }
+
+            pc.ontrack = event => { 
+                if (currentCallMode === 'video') document.getElementById('remote-video').srcObject = event.streams[0]; 
+                else document.getElementById('remote-audio').srcObject = event.streams[0]; 
+            };
+
+            const callDocRef = doc(db, "calls", currentCallDocId);
+            const offerCandidates = collection(callDocRef, 'offerCandidates'); 
+            const answerCandidates = collection(callDocRef, 'answerCandidates');
+
+            pc.onicecandidate = event => { if (event.candidate) addDoc(answerCandidates, event.candidate.toJSON()); };
+
+            const callDocSnap = await getDoc(callDocRef);
+            const callData = callDocSnap.data();
+            if (!callData) return;
+
+            await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
+            const answerDescription = await pc.createAnswer();
+            await pc.setLocalDescription(answerDescription);
+
+            await updateDoc(callDocRef, { answer: { type: answerDescription.type, sdp: answerDescription.sdp } });
+
+            onSnapshot(offerCandidates, snapshot => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
                 });
+            });
+
+            callSnapshotUnsub = onSnapshot(callDocRef, (docSnap) => {
+                const data = docSnap.data();
+                if (!data || data.status === 'ended' || data.status === 'rejected') { 
+                    stopCallCleanup(); 
+                }
             });
         }
 
-        // ================= PERBAIKAN TOMBOL TERIMA PANGGILAN =================
-    document.getElementById('btn-answer-call').addEventListener('click', async () => { 
-    stopRingtone();
-    document.getElementById('incoming-call-modal').style.display = 'none';
+        // ================= TOMBOL AKSI PANGGILAN MASUK & KELUAR =================
+        document.getElementById('btn-answer-call').addEventListener('click', async () => { 
+            stopRingtone();
+            document.getElementById('incoming-call-modal').style.display = 'none';
 
-    if (!currentCallDocId) return;
-
-    // Ubah status panggilan di Firestore menjadi answered
-    await updateDoc(doc(db, "calls", currentCallDocId), { status: 'answered' });
-
-    // Mulai WebRTC sebagai sisi penerima (callee)
-async function acceptIncomingCall() {
-    document.getElementById('active-call-modal').style.display = 'flex';
-    document.getElementById('active-call-status').innerText = "Menghubungkan...";
-
-    if (currentCallMode === 'video') { 
-        document.getElementById('local-video').style.display = 'block'; 
-        document.getElementById('remote-video').style.display = 'block'; 
-        document.getElementById('active-call-avatar').style.display = 'none'; 
-    } else { 
-        document.getElementById('local-video').style.display = 'none'; 
-        document.getElementById('remote-video').style.display = 'none'; 
-        document.getElementById('active-call-avatar').style.display = 'block'; 
-    }
-
-    pc = new RTCPeerConnection(servers);
-    try {
-        localStream = await navigator.mediaDevices.getUserMedia(currentCallMode === 'video' ? { audio: true, video: true } : { audio: true, video: false });
-        if (currentCallMode === 'video') document.getElementById('local-video').srcObject = localStream;
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-    } catch (e) {
-        alert("Akses media kamera/mikrofon ditolak.");
-        stopCallCleanup();
-        return;
-    }
-
-    pc.ontrack = event => { 
-        if (currentCallMode === 'video') document.getElementById('remote-video').srcObject = event.streams[0]; 
-        else document.getElementById('remote-audio').srcObject = event.streams[0]; 
-    };
-
-    const callDocRef = doc(db, "calls", currentCallDocId);
-    const offerCandidates = collection(callDocRef, 'offerCandidates'); 
-    const answerCandidates = collection(callDocRef, 'answerCandidates');
-
-    pc.onicecandidate = event => { if (event.candidate) addDoc(answerCandidates, event.candidate.toJSON()); };
-
-    const callDocSnap = await getDoc(callDocRef);
-    const callData = callDocSnap.data();
-    if (!callData) return;
-
-    await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
-    const answerDescription = await pc.createAnswer();
-    await pc.setLocalDescription(answerDescription);
-
-    await updateDoc(callDocRef, { answer: { type: answerDescription.type, sdp: answerDescription.sdp } });
-
-    onSnapshot(offerCandidates, snapshot => {
-        snapshot.docChanges().forEach(change => {
-            if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+            if (!currentCallDocId) return;
+            await updateDoc(doc(db, "calls", currentCallDocId), { status: 'answered' });
+            acceptIncomingCall();
         });
-    });
-
-    callSnapshotUnsub = onSnapshot(callDocRef, (docSnap) => {
-        const data = docSnap.data();
-        if (!data || data.status === 'ended' || data.status === 'rejected') { 
-            stopCallCleanup(); 
-        }
-    });
-}
         
         document.getElementById('btn-reject-call').addEventListener('click', async () => { 
             stopRingtone(); document.getElementById('incoming-call-modal').style.display = 'none';
@@ -1224,74 +1189,70 @@ async function acceptIncomingCall() {
         
         const storage = getStorage(app);
 
-// ================= LOGIKA GANTI FOTO & SIMPAN PROFIL (MENGGUNAKAN CLOUDINARY) =================
-const photoInput = document.getElementById('profile-photo-input');
-const avatarPreview = document.getElementById('profile-avatar-preview');
-let selectedProfileFile = null;
+        // ================= LOGIKA GANTI FOTO & SIMPAN PROFIL (MENGGUNAKAN CLOUDINARY) =================
+        const photoInput = document.getElementById('profile-photo-input');
+        const avatarPreview = document.getElementById('profile-avatar-preview');
+        let selectedProfileFile = null;
 
-avatarPreview.addEventListener('click', () => photoInput.click());
+        avatarPreview.addEventListener('click', () => photoInput.click());
 
-photoInput.addEventListener('change', (e) => {
-    if (e.target.files && e.target.files[0]) {
-        selectedProfileFile = e.target.files[0];
-        avatarPreview.src = URL.createObjectURL(selectedProfileFile);
-    }
-});
-
-document.getElementById('btn-save-profile').addEventListener('click', async () => {
-    const newName = document.getElementById('profile-name-input').value.trim();
-    if (!newName) return alert("Nama tidak boleh kosong.");
-    
-    const btn = document.getElementById('btn-save-profile');
-    btn.innerText = "Menyimpan...";
-    btn.disabled = true;
-
-    try {
-        let newPhotoUrl = currentUser.photoURL || null; 
-        
-        // Jika pengguna memilih foto profil baru, unggah ke Cloudinary
-        if (selectedProfileFile) {
-            // Sesuaikan dengan Cloud Name dan Upload Preset Cloudinary Anda
-            const CLOUD_NAME = "jgcuvsst"; 
-            const UPLOAD_PRESET = "gombleh"; 
-
-            const formData = new FormData();
-            formData.append("file", selectedProfileFile);
-            formData.append("upload_preset", UPLOAD_PRESET);
-
-            const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
-                method: "POST",
-                body: formData
-            });
-
-            const data = await response.json();
-            if (!data.secure_url) {
-                throw new Error("Gagal mengunggah foto profil ke Cloudinary");
+        photoInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                selectedProfileFile = e.target.files[0];
+                avatarPreview.src = URL.createObjectURL(selectedProfileFile);
             }
+        });
 
-            newPhotoUrl = data.secure_url;
-        }
+        document.getElementById('btn-save-profile').addEventListener('click', async () => {
+            const newName = document.getElementById('profile-name-input').value.trim();
+            if (!newName) return alert("Nama tidak boleh kosong.");
+            
+            const btn = document.getElementById('btn-save-profile');
+            btn.innerText = "Menyimpan...";
+            btn.disabled = true;
 
-        // Update di Firebase Auth
-        await updateProfile(currentUser, { displayName: newName, photoURL: newPhotoUrl });
-        
-        // Update di Firestore
-        const userDocData = { name: newName };
-        if (newPhotoUrl) {
-            userDocData.photoURL = newPhotoUrl;
-        }
-        
-        await setDoc(doc(db, "users", currentUser.uid), userDocData, { merge: true });
-        
-        alert("Profil berhasil diperbarui!");
-    } catch (error) {
-        console.error("Gagal update profil:", error);
-        alert("Gagal menyimpan profil: " + error.message);
-    } finally {
-        btn.innerText = "Simpan Profil";
-        btn.disabled = false;
-    }
-});
+            try {
+                let newPhotoUrl = currentUser.photoURL || null; 
+                
+                if (selectedProfileFile) {
+                    const CLOUD_NAME = "jgcuvsst"; 
+                    const UPLOAD_PRESET = "gombleh"; 
+
+                    const formData = new FormData();
+                    formData.append("file", selectedProfileFile);
+                    formData.append("upload_preset", UPLOAD_PRESET);
+
+                    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    if (!data.secure_url) {
+                        throw new Error("Gagal mengunggah foto profil ke Cloudinary");
+                    }
+
+                    newPhotoUrl = data.secure_url;
+                }
+
+                await updateProfile(currentUser, { displayName: newName, photoURL: newPhotoUrl });
+                
+                const userDocData = { name: newName };
+                if (newPhotoUrl) {
+                    userDocData.photoURL = newPhotoUrl;
+                }
+                
+                await setDoc(doc(db, "users", currentUser.uid), userDocData, { merge: true });
+                
+                alert("Profil berhasil diperbarui!");
+            } catch (error) {
+                console.error("Gagal update profil:", error);
+                alert("Gagal menyimpan profil: " + error.message);
+            } finally {
+                btn.innerText = "Simpan Profil";
+                btn.disabled = false;
+            }
+        });
 
         // --- SCRIPT PEMBASMI BANNER VERCEL ---
         setInterval(() => {
