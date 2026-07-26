@@ -3,7 +3,7 @@
   "name": "Gibah",
   "short_name": "Gibah",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#d1d7db",
   "theme_color": "#00a884",
   "description": "Gibah Dolo Yok",
