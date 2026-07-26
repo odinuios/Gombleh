@@ -52,7 +52,6 @@
         .name { font-weight: 500; font-size: 16px; margin: 0 0 3px 0; color: #111b21; }
         .preview { font-size: 13px; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
         .call-icon-indicator { font-size: 18px; color: #00a884; margin-left: auto; }
-        .call-missed { color: #d9534f; }
         
         .request-actions { display: flex; gap: 5px; }
         .btn-acc { background: #00a884; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
@@ -74,7 +73,7 @@
         #chat-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; text-align: center; color: #667781; background-color: #f0f2f5; }
         #chat-empty-state h1 { font-weight: 300; margin-bottom: 10px; color: #41525d; }
         #chat-active-state { display: none; flex-direction: column; height: 100%; width: 100%; background-color: #efeae2; }
-        .header-actions { margin-left: auto; display: flex; gap: 5px; }
+        .header-actions { margin-left: auto; display: flex; gap: 5px; align-items: center; }
 
         .chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: contain; }
         .message { max-width: 65%; padding: 8px 12px; border-radius: 7px; font-size: 14px; position: relative; line-height: 1.4; box-shadow: 0 1px 0.5px rgba(11,20,26,.13); word-wrap: break-word; }
@@ -83,8 +82,6 @@
         .msg-sender { font-size: 11px; font-weight: bold; color: #00766c; margin-bottom: 2px; }
         .msg-time-container { display: flex; align-items: center; justify-content: flex-end; margin: 4px 0 -4px 10px; float: right; gap: 4px; }
         .msg-time { font-size: 11px; color: #667781; }
-        .msg-status { font-size: 11px; font-weight: bold; }
-        .message img { max-width: 100%; border-radius: 5px; cursor: pointer; margin-bottom: 5px; display: block; }
         
         .chat-input-area { background-color: #f0f2f5; display: flex; align-items: center; padding: 10px 15px; gap: 10px; flex-shrink: 0; }
         .chat-input-area input[type="text"] { flex: 1; border: none; padding: 12px 15px; border-radius: 8px; outline: none; font-size: 15px; }
@@ -127,14 +124,19 @@
     <!-- Modals -->
     <div id="group-add-modal" class="modal-overlay">
         <div class="modal-box">
-            <div class="modal-header"><span>Pilih Kontak</span><button class="modal-close" id="btn-close-group-modal">✖</button></div>
+            <div class="modal-header"><span>Tambah Kontak ke Grup</span><button class="modal-close" id="btn-close-group-modal">✖</button></div>
             <div class="modal-content" id="group-add-contact-list"></div>
         </div>
     </div>
+
+    <!-- Modal Lihat Anggota & Hapus Grup -->
     <div id="group-members-modal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header"><span>Anggota Grup</span><button class="modal-close" id="btn-close-members-modal">✖</button></div>
             <div class="modal-content" id="group-members-list"></div>
+            <div style="padding: 15px; background: #f0f2f5; border-top: 1px solid #ddd; text-align: center;" id="group-admin-actions">
+                <button id="btn-delete-group" style="background: #d9534f; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%;">Hapus Grup Ini</button>
+            </div>
         </div>
     </div>
 
@@ -227,6 +229,7 @@
                     <div id="chat-main-header" style="display: flex; align-items: center; gap: 10px; cursor: pointer;"></div>
                     <div class="header-actions" id="chat-header-actions" style="display: flex; gap: 5px;">
                         <button class="action-btn" id="btn-open-group-modal" title="Tambah Anggota" style="display:none;">➕</button>
+                        <button class="action-btn" id="btn-open-members-modal" title="Lihat Anggota" style="display:none;">👥</button>
                         <button class="action-btn" id="btn-start-voice-call" title="Panggilan Suara">📞</button>
                         <button class="action-btn" id="btn-start-video-call" title="Video Call">📹</button>
                     </div>
@@ -328,7 +331,6 @@
         const friendRequestsContainer = document.getElementById('friend-requests-container');
         const emptyCalls = document.getElementById('empty-calls');
         
-        // Navigation Tabs
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -426,7 +428,6 @@
             const groupName = document.getElementById('group-name-input').value.trim();
             if (!groupName) return alert("Nama grup tidak boleh kosong!");
             
-            // Membuat ID grup baru
             const groupRef = doc(collection(db, "groups"));
             const groupId = groupRef.id;
             
@@ -439,10 +440,7 @@
                 createdAt: serverTimestamp()
             };
             
-            // Simpan data grup ke collection 'groups'
             await setDoc(groupRef, groupData);
-            
-            // Tambahkan referensi grup tersebut ke daftar kontak user pembuat
             await setDoc(doc(db, "users", currentUser.uid, "contacts", groupId), {
                 uid: groupId,
                 type: 'group',
@@ -453,7 +451,7 @@
             alert("Grup berhasil dibuat!");
         });
 
-        // ================= LOAD SIDEBAR & CHAT & LAINNYA =================
+        // ================= LOAD SIDEBAR & CHAT =================
         function loadSidebarItems() {
             chatListContainer.innerHTML = ''; contactListContainer.innerHTML = '';
             
@@ -464,9 +462,12 @@
                     const contactData = docSnap.data();
                     
                     if (contactData.type === 'group') {
-                        // Memuat Data Grup
                         onSnapshot(doc(db, "groups", contactData.uid), (groupDoc) => {
-                            if (!groupDoc.exists()) return;
+                            if (!groupDoc.exists()) {
+                                document.getElementById(`chat-item-${contactData.uid}`)?.remove();
+                                document.getElementById(`contact-item-${contactData.uid}`)?.remove();
+                                return;
+                            }
                             const latestData = groupDoc.data();
                             const chatId = latestData.uid;
                             
@@ -486,7 +487,6 @@
                             chatListContainer.appendChild(makeItem('chat-item'));
                         });
                     } else {
-                        // Memuat Data Private Chat
                         onSnapshot(doc(db, "users", contactData.uid), (userDoc) => {
                             if (!userDoc.exists()) return;
                             const latestData = userDoc.data();
@@ -540,15 +540,15 @@
             
             document.getElementById('chat-main-header').innerHTML = `${avatarHtml} <span style="font-weight:bold; font-size: 16px;">${name}</span>`;
             
-            // Tampilkan tombol tambah anggota hanya jika obrolan adalah grup
+            // Atur visibilitas tombol grup di header
             document.getElementById('btn-open-group-modal').style.display = type === 'group' ? 'block' : 'none';
+            document.getElementById('btn-open-members-modal').style.display = type === 'group' ? 'block' : 'none';
 
             if (window.innerWidth <= 768) document.getElementById('chat-main-area').classList.add('active-mobile');
             
             loadChatRoom(id, type);
         }
 
-        // ================= MEMUAT RUANG OBROLAN DAN KIRIM PESAN =================
         function loadChatRoom(targetId, type) {
             if (unsubscribeChat) unsubscribeChat();
             
@@ -577,7 +577,6 @@
             });
         }
 
-        // Fungsi Tombol Kirim Pesan
         document.getElementById('btn-send').addEventListener('click', async () => {
             const input = document.getElementById('message-input');
             const text = input.value.trim();
@@ -595,7 +594,9 @@
             input.value = '';
         });
 
-        // Menambahkan Pengguna Lain Ke Grup
+        // ================= KELOLA ANGGOTA & HAPUS GRUP =================
+        
+        // Membuka modal tambah anggota
         document.getElementById('btn-open-group-modal').addEventListener('click', async () => {
             if (activeTargetType !== 'group') return;
             document.getElementById('group-add-modal').style.display = 'flex';
@@ -603,7 +604,6 @@
             const listContainer = document.getElementById('group-add-contact-list');
             listContainer.innerHTML = '<p style="text-align:center; padding:20px;">Memuat kontak...</p>';
             
-            // Dapatkan member grup saat ini agar tidak ditampilkan dalam opsi tambah
             const groupDoc = await getDoc(doc(db, "groups", activeTargetId));
             const currentMembers = groupDoc.exists() ? groupDoc.data().members || [] : [];
             
@@ -626,14 +626,8 @@
                     div.innerHTML = `<img src="${uData.photoURL || 'https://via.placeholder.com/45'}" class="avatar"><div class="info"><p class="name">${uData.name}</p></div><button class="btn-acc" style="margin-left:auto;">+ Tambah</button>`;
                     
                     div.querySelector('.btn-acc').addEventListener('click', async () => {
-                        // Tambah ke array members di Firestore
-                        await updateDoc(doc(db, "groups", activeTargetId), {
-                            members: arrayUnion(uData.uid)
-                        });
-                        // Tambahkan referensi grup ke daftar kontak user yang baru dimasukkan
-                        await setDoc(doc(db, "users", uData.uid, "contacts", activeTargetId), {
-                            uid: activeTargetId, type: 'group', name: activeTargetName
-                        });
+                        await updateDoc(doc(db, "groups", activeTargetId), { members: arrayUnion(uData.uid) });
+                        await setDoc(doc(db, "users", uData.uid, "contacts", activeTargetId), { uid: activeTargetId, type: 'group', name: activeTargetName });
                         alert(`${uData.name} berhasil ditambahkan ke grup!`);
                         div.remove();
                     });
@@ -648,6 +642,96 @@
 
         document.getElementById('btn-close-group-modal').addEventListener('click', () => {
             document.getElementById('group-add-modal').style.display = 'none';
+        });
+
+        // Membuka modal daftar anggota grup & opsi hapus grup
+        document.getElementById('btn-open-members-modal').addEventListener('click', async () => {
+            if (activeTargetType !== 'group') return;
+            document.getElementById('group-members-modal').style.display = 'flex';
+            
+            const membersListContainer = document.getElementById('group-members-list');
+            membersListContainer.innerHTML = '<p style="text-align:center; padding:20px;">Memuat anggota...</p>';
+
+            const groupDoc = await getDoc(doc(db, "groups", activeTargetId));
+            if (!groupDoc.exists()) return;
+            
+            const groupData = groupDoc.data();
+            const members = groupData.members || [];
+            const admins = groupData.admins || [];
+            
+            // Tampilkan tombol hapus grup hanya jika user saat ini adalah admin/pembuat grup
+            const isAdmin = admins.includes(currentUser.uid);
+            document.getElementById('group-admin-actions').style.display = isAdmin ? 'block' : 'none';
+
+            membersListContainer.innerHTML = '';
+            
+            for (let memberId of members) {
+                const userDoc = await getDoc(doc(db, "users", memberId));
+                if (userDoc.exists()) {
+                    const uData = userDoc.data();
+                    const isThisUserAdmin = admins.includes(memberId);
+                    
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.innerHTML = `
+                        <img src="${uData.photoURL || 'https://via.placeholder.com/45'}" class="avatar">
+                        <div class="info">
+                            <p class="name">${uData.name} ${memberId === currentUser.uid ? '(Anda)' : ''}</p>
+                            <p class="preview" style="color: ${isThisUserAdmin ? '#00a884' : '#667781'};">${isThisUserAdmin ? 'Admin' : 'Anggota'}</p>
+                        </div>
+                    `;
+
+                    // Jika user saat ini admin dan target bukan diri sendiri, berikan opsi untuk mengeluarkan anggota
+                    if (isAdmin && memberId !== currentUser.uid) {
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'btn-rej';
+                        removeBtn.style.marginLeft = 'auto';
+                        removeBtn.innerText = 'Keluarkan';
+                        removeBtn.addEventListener('click', async () => {
+                            if (confirm(`Keluarkan ${uData.name} dari grup?`)) {
+                                await updateDoc(doc(db, "groups", activeTargetId), { members: arrayRemove(memberId) });
+                                await deleteDoc(doc(db, "users", memberId, "contacts", activeTargetId));
+                                div.remove();
+                                alert('Anggota berhasil dikeluarkan.');
+                            }
+                        });
+                        div.appendChild(removeBtn);
+                    }
+
+                    membersListContainer.appendChild(div);
+                }
+            }
+        });
+
+        document.getElementById('btn-close-members-modal').addEventListener('click', () => {
+            document.getElementById('group-members-modal').style.display = 'none';
+        });
+
+        // Fitur Hapus Grup Sepenuhnya (Hanya untuk Admin/Pembuat)
+        document.getElementById('btn-delete-group').addEventListener('click', async () => {
+            if (!confirm("Apakah Anda yakin ingin menghapus grup ini beserta seluruh riwayat obrolannya? Tindakan ini tidak dapat dibatalkan.")) return;
+            
+            const groupDoc = await getDoc(doc(db, "groups", activeTargetId));
+            if (!groupDoc.exists()) return;
+            const members = groupDoc.data().members || [];
+
+            // Hapus referensi kontak dari setiap anggota yang tergabung di dalam grup
+            for (let memberId of members) {
+                try {
+                    await deleteDoc(doc(db, "users", memberId, "contacts", activeTargetId));
+                } catch(e) {}
+            }
+
+            // Hapus dokumen data grup itu sendiri
+            await deleteDoc(doc(db, "groups", activeTargetId));
+
+            // Tutup modal dan reset tampilan chat utama
+            document.getElementById('group-members-modal').style.display = 'none';
+            document.getElementById('chat-active-state').style.display = 'none';
+            document.getElementById('chat-empty-state').style.display = 'flex';
+            activeTargetId = null;
+            
+            alert("Grup berhasil dihapus.");
         });
 
         // ================= RIWAYAT PANGGILAN =================
@@ -692,9 +776,7 @@
                         callHistoryContainer.appendChild(div);
                     });
                 }
-            }, (error) => {
-                console.error("Butuh indeks Firestore untuk query riwayat panggilan. Klik link di konsol Firestore.", error);
-            });
+            }, (error) => {});
         }
 
         // ================= WEBRTC PANGGILAN =================
@@ -765,7 +847,6 @@
         document.getElementById('btn-answer-call').addEventListener('click', async () => { 
             stopRingtone();
             document.getElementById('incoming-call-modal').style.display = 'none';
-            // Logic WebRTC Answer call goes here (kept minimal per limit)
         });
         
         document.getElementById('btn-reject-call').addEventListener('click', async () => { 
