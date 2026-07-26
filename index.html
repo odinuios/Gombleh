@@ -400,7 +400,6 @@ document.getElementById('attach-photo').addEventListener('click', () => inputPho
 document.getElementById('attach-camera').addEventListener('click', () => inputCamera.click());
 document.getElementById('attach-file').addEventListener('click', () => inputFile.click());
 
-// Fungsi baru untuk menangani upload
 async function handleAttachment(e) {
     const file = e.target.files[0];
     if (!file || !activeTargetId) return;
@@ -410,35 +409,52 @@ async function handleAttachment(e) {
     const msgType = isImage ? 'image' : 'file';
     const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
     
-    // Tampilkan indikator loading (opsional, menggunakan teks tombol)
     const originalBtnText = btnAttach.innerText;
     btnAttach.innerText = "⏳";
     btnAttach.disabled = true;
 
     try {
-        // Upload ke Firebase Storage
-        const storageRef = ref(storage, `chats/${chatId}/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        const fileUrl = await getDownloadURL(storageRef);
-        
-        // Simpan URL ke Firestore
+        const safeFileName = file.name || (isImage ? "foto.jpg" : "file_lampiran");
+
+        // Konfigurasi Cloudinary Anda
+        const CLOUD_NAME = "jgcuvsst"; // Ganti dengan Cloud Name Anda dari Cloudinary
+        const UPLOAD_PRESET = "gombleh"; // Ganti dengan Upload Preset Anda (pastikan mode unsigned)
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", UPLOAD_PRESET);
+
+        // Kirim file langsung ke API Cloudinary
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+        if (!data.secure_url) {
+            throw new Error("Gagal mengunggah ke Cloudinary");
+        }
+
+        const fileUrl = data.secure_url;
+
+        // Simpan URL dari Cloudinary ke Firestore
         await addDoc(collection(db, "chats", chatId, "messages"), {
             senderId: currentUser.uid,
             senderName: currentUser.displayName,
-            text: isImage ? '📷 Foto' : `📄 ${file.name}`, // Teks fallback
+            text: isImage ? '📷 Foto' : `📄 ${safeFileName}`,
             fileUrl: fileUrl,
-            fileName: file.name,
+            fileName: safeFileName,
             type: msgType,
             status: 'sent',
             timestamp: serverTimestamp()
         });
     } catch (error) {
         console.error("Gagal mengirim lampiran:", error);
-        alert("Gagal mengunggah file. Pastikan ukuran tidak terlalu besar.");
+        alert("Gagal mengunggah file ke Cloudinary. Periksa Cloud Name dan Upload Preset Anda.");
     } finally {
         btnAttach.innerText = "📎";
         btnAttach.disabled = false;
-        e.target.value = ''; // Reset input
+        e.target.value = '';
     }
 }
 
