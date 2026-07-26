@@ -455,23 +455,39 @@
                     onSnapshot(doc(db, "users", contactData.uid), (userDoc) => {
                         const latestData = userDoc.exists() ? userDoc.data() : contactData;
                         
-                        const existingEl = document.getElementById(`contact-${contactData.uid}`);
-                        if (existingEl) existingEl.remove();
+                        // Bersihkan elemen lama di kedua tempat (Chat & Kontak)
+                        const existingChatEl = document.getElementById(`chat-item-${contactData.uid}`);
+                        if (existingChatEl) existingChatEl.remove();
+                        const existingContactEl = document.getElementById(`contact-item-${contactData.uid}`);
+                        if (existingContactEl) existingContactEl.remove();
 
-                        const div = document.createElement('div');
-                        div.className = 'list-item item-private';
-                        div.id = `contact-${contactData.uid}`;
-                        div.innerHTML = `
+                        // 1. Buat elemen untuk Tab Kontak
+                        const contactDiv = document.createElement('div');
+                        contactDiv.className = 'list-item item-private';
+                        contactDiv.id = `contact-item-${contactData.uid}`;
+                        contactDiv.innerHTML = `
                             <img src="${latestData.photoURL || 'https://via.placeholder.com/45'}" class="avatar">
                             <div class="info">
                                 <p class="name">${latestData.name || contactData.name}</p>
                                 <p class="preview">${latestData.email || contactData.email}</p>
                             </div>
                         `;
-                        div.addEventListener('click', () => openChat(latestData.uid, latestData.name, latestData.photoURL, 'private'));
-                        
-                        contactListContainer.appendChild(div);
-                        chatListContainer.appendChild(div.cloneNode(true));
+                        contactDiv.addEventListener('click', () => openChat(latestData.uid, latestData.name, latestData.photoURL, 'private'));
+                        contactListContainer.appendChild(contactDiv);
+
+                        // 2. Buat elemen terpisah untuk Tab Chats agar event klik-nya aktif mandiri
+                        const chatDiv = document.createElement('div');
+                        chatDiv.className = 'list-item item-private';
+                        chatDiv.id = `chat-item-${contactData.uid}`;
+                        chatDiv.innerHTML = `
+                            <img src="${latestData.photoURL || 'https://via.placeholder.com/45'}" class="avatar">
+                            <div class="info">
+                                <p class="name">${latestData.name || contactData.name}</p>
+                                <p class="preview">${latestData.email || contactData.email}</p>
+                            </div>
+                        `;
+                        chatDiv.addEventListener('click', () => openChat(latestData.uid, latestData.name, latestData.photoURL, 'private'));
+                        chatListContainer.appendChild(chatDiv);
                     });
                 });
             });
@@ -482,15 +498,19 @@
                 snapshot.forEach((docSnap) => {
                     const gData = docSnap.data();
                     if (gData.members && gData.members.includes(currentUser.uid)) {
-                        const createGroupItem = () => {
-                            const div = document.createElement('div');
-                            div.className = 'list-item item-group';
-                            div.innerHTML = `<div class="avatar" style="background:#00a884; color:white;">👥</div><div class="info"><p class="name">${gData.groupName}</p><p class="preview">Grup Bersama</p></div>`;
-                            div.addEventListener('click', () => openChat(gData.groupId, gData.groupName, null, 'group'));
-                            return div;
-                        };
-                        contactListContainer.appendChild(createGroupItem());
-                        chatListContainer.appendChild(createGroupItem());
+                        // 1. Buat elemen Grup untuk Tab Kontak
+                        const groupContactDiv = document.createElement('div');
+                        groupContactDiv.className = 'list-item item-group';
+                        groupContactDiv.innerHTML = `<div class="avatar" style="background:#00a884; color:white;">👥</div><div class="info"><p class="name">${gData.groupName}</p><p class="preview">Grup Bersama</p></div>`;
+                        groupContactDiv.addEventListener('click', () => openChat(gData.groupId, gData.groupName, null, 'group'));
+                        contactListContainer.appendChild(groupContactDiv);
+
+                        // 2. Buat elemen Grup untuk Tab Chats
+                        const groupChatDiv = document.createElement('div');
+                        groupChatDiv.className = 'list-item item-group';
+                        groupChatDiv.innerHTML = `<div class="avatar" style="background:#00a884; color:white;">👥</div><div class="info"><p class="name">${gData.groupName}</p><p class="preview">Grup Bersama</p></div>`;
+                        groupChatDiv.addEventListener('click', () => openChat(gData.groupId, gData.groupName, null, 'group'));
+                        chatListContainer.appendChild(groupChatDiv);
                     }
                 });
             });
@@ -507,8 +527,6 @@
             let avatarHtml = type === 'group' ? `<div class="avatar" style="background:#00a884; color:white; width:35px; height:35px; font-size:15px; margin:0;">👥</div>` : `<img src="${photo || 'https://via.placeholder.com/45'}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">`;
             
             chatMainHeader.innerHTML = `${avatarHtml} <span style="font-weight:bold; font-size: 16px;">${name}</span>`;
-            
-            // Memastikan tombol aksi (panggilan suara & video) muncul kembali khusus chat privat
             chatHeaderActions.style.display = (type === 'private') ? 'flex' : 'none';
 
             if (window.innerWidth <= 768) chatMainArea.classList.add('active-mobile');
