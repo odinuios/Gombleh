@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Chat Pro</title>
+    <title>Web Chat Pro - Grup & Notifikasi</title>
     <style>
         body { margin: 0; font-family: 'Segoe UI', Helvetica, sans-serif; background-color: #d1d7db; display: flex; height: 100vh; justify-content: center; align-items: center; }
         
@@ -19,14 +19,15 @@
         /* Sidebar (Kiri) */
         .sidebar { flex: 0 0 30%; min-width: 300px; border-right: 1px solid #d1d7db; display: flex; flex-direction: column; background: #fff; }
         .header { height: 60px; background-color: #f0f2f5; display: flex; align-items: center; padding: 0 15px; font-weight: 600; color: #41525d; border-bottom: 1px solid #ddd; }
-        .add-contact-box { padding: 10px; background: #fff; border-bottom: 1px solid #ddd; display: flex; gap: 5px; }
-        .add-contact-box input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
-        .add-contact-box button { padding: 8px 12px; background: #00a884; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .menu-box { padding: 10px; background: #fff; border-bottom: 1px solid #ddd; display: flex; flex-direction: column; gap: 8px; }
+        .menu-row { display: flex; gap: 5px; }
+        .menu-row input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px; outline: none; font-size: 13px; }
+        .menu-row button { padding: 8px 12px; background: #00a884; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 13px; }
         
         .chat-list { flex: 1; overflow-y: auto; }
         .chat-item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f2f2f2; cursor: pointer; }
         .chat-item:hover { background-color: #f5f6f6; }
-        .avatar { width: 45px; height: 45px; border-radius: 50%; background-color: #dfe5e7; margin-right: 15px; flex-shrink: 0; object-fit: cover; }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; background-color: #dfe5e7; margin-right: 15px; flex-shrink: 0; object-fit: cover; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #555; }
         .chat-info { flex: 1; overflow: hidden; }
         .chat-name { font-weight: 500; font-size: 16px; margin: 0 0 3px 0; color: #111b21; }
         .chat-preview { font-size: 13px; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
@@ -39,10 +40,11 @@
         .message { max-width: 65%; padding: 8px 12px; border-radius: 7px; font-size: 14px; position: relative; line-height: 1.4; box-shadow: 0 1px 0.5px rgba(11,20,26,.13); word-wrap: break-word; }
         .message.received { background-color: #fff; align-self: flex-start; border-top-left-radius: 0; }
         .message.sent { background-color: #d9fdd3; align-self: flex-end; border-top-right-radius: 0; }
+        .msg-sender { font-size: 11px; font-weight: bold; color: #00766c; margin-bottom: 2px; }
         .msg-time { font-size: 11px; color: #667781; float: right; margin: 6px 0 -4px 10px; }
         
         /* Media dalam Pesan */
-        .message img { max-width: 100%; border-radius: 5px; cursor: pointer; margin-bottom: 5px; }
+        .message img { max-width: 100%; border-radius: 5px; cursor: pointer; margin-bottom: 5px; display: block; }
         .message audio { max-width: 200px; height: 35px; outline: none; margin-bottom: 5px; }
         .message a { color: #027eb5; text-decoration: none; font-weight: bold; }
 
@@ -50,7 +52,6 @@
         .chat-input-area { background-color: #f0f2f5; display: flex; align-items: center; padding: 10px 15px; gap: 10px; }
         .chat-input-area input[type="text"] { flex: 1; border: none; padding: 12px 15px; border-radius: 8px; outline: none; font-size: 15px; }
         
-        /* Tombol Aksi Tambahan */
         .action-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #54656f; padding: 5px; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
         .action-btn:hover { background: #d9d9d9; }
         .recording { color: red !important; animation: blink 1s infinite; }
@@ -84,47 +85,48 @@
         <div class="sidebar">
             <div class="header" id="my-profile-header">Memuat...</div>
             
-            <div class="add-contact-box">
-                <input type="email" id="add-email-input" placeholder="Tambah email teman..." autocomplete="off">
-                <button id="btn-add-contact">Tambah</button>
+            <div class="menu-box">
+                <!-- Tambah Kontak -->
+                <div class="menu-row">
+                    <input type="email" id="add-email-input" placeholder="Email teman..." autocomplete="off">
+                    <button id="btn-add-contact">+ Kontak</button>
+                </div>
+                <!-- Buat Grup -->
+                <div class="menu-row">
+                    <input type="text" id="group-name-input" placeholder="Nama Grup Baru..." autocomplete="off">
+                    <button id="btn-create-group" style="background:#005c4b;">+ Grup</button>
+                </div>
             </div>
 
             <div class="chat-list">
-                <!-- Kontak akan dimuat di sini -->
+                <!-- Kontak & Grup akan dimuat di sini -->
             </div>
         </div>
 
         <!-- Ruang Obrolan (Kanan) -->
         <div class="chat-main">
-            <div class="header" id="chat-main-header">Pilih kontak untuk mulai chat</div>
+            <div class="header" id="chat-main-header">Pilih kontak atau grup untuk mulai chat</div>
             <div class="chat-history"></div>
             
             <div class="chat-input-area">
-                <!-- Input File Tersembunyi -->
                 <input type="file" id="file-input" style="display: none;" accept="image/*, .pdf, .doc, .docx, .xls, .xlsx, .zip">
-                
-                <!-- Tombol Lampiran & Lokasi -->
                 <button class="action-btn" id="btn-attach" title="Kirim File/Foto">📎</button>
                 <button class="action-btn" id="btn-location" title="Kirim Lokasi">📍</button>
                 
                 <input type="text" id="message-input" placeholder="Ketik pesan..." autocomplete="off"/>
                 
-                <!-- Tombol Voice Note -->
                 <button class="action-btn" id="btn-mic" title="Rekam Suara">🎤</button>
-                <!-- Tombol Kirim -->
                 <button class="btn-send" id="btn-send">Kirim</button>
             </div>
         </div>
     </div>
 
-    <!-- Script Firebase -->
+    <!-- Script Firebase & Logika Aplikasi -->
     <script type="module">
-        // 1. IMPORT FIREBASE (Tanpa Storage)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, where, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 2. KONFIGURASI FIREBASE (Dari Akun Anda)
         const firebaseConfig = {
             apiKey: "AIzaSyCx4_E64FBUDyo4RzDDWMLklRlZMvMUlFM",
             authDomain: "gombleh-9dea6.firebaseapp.com",
@@ -140,23 +142,38 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // ================= PENGATURAN CLOUDINARY =================
-        // PERHATIAN: Ganti NAMA_CLOUD_ANDA dengan Cloud Name dari dashboard Cloudinary Anda
-        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/jgcuvsst/auto/upload"; 
-        const CLOUDINARY_PRESET = "gombleh"; // Preset yang sudah Anda tentukan
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dvhcfc37o/auto/upload"; // Sesuaikan cloud name Anda jika perlu
+        const CLOUDINARY_PRESET = "gombleh";
 
-        // Variabel Global
         let currentUser = null;
-        let currentRecipientUid = null;
+        let activeTargetId = null; // Bisa UID teman atau ID grup
+        let activeTargetType = 'private'; // 'private' atau 'group'
         let unsubscribeChat = null;
 
-        // Elemen DOM
         const loginScreen = document.getElementById('login-screen');
         const appContainer = document.getElementById('app-container');
         const chatList = document.querySelector('.chat-list');
         const chatHistory = document.querySelector('.chat-history');
         const chatMainHeader = document.getElementById('chat-main-header');
         const inputMessage = document.getElementById('message-input');
+
+        // Fungsi Membunyikan Notifikasi Audio (Web Audio API)
+        function playNotificationSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Nada D5
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.15);
+            } catch (e) {
+                console.log("Audio diblokir browser sebelum interaksi.");
+            }
+        }
 
         // ================= AUTHENTICATION =================
         document.getElementById('btn-login').addEventListener('click', () => {
@@ -176,12 +193,11 @@
                     ${user.displayName}
                 `;
 
-                // Update Data Global di Firestore
                 await setDoc(doc(db, "users", user.uid), {
                     uid: user.uid, name: user.displayName, email: user.email, photoURL: user.photoURL
                 }, { merge: true });
                 
-                loadContacts();
+                loadSidebarItems();
             } else {
                 currentUser = null;
                 loginScreen.classList.remove('hidden');
@@ -189,7 +205,8 @@
             }
         });
 
-        // ================= KONTAK PRIVAT =================
+        // ================= KONTROL KONTAK & GRUP =================
+        // Tambah Kontak Pribadi
         document.getElementById('btn-add-contact').addEventListener('click', async () => {
             const email = document.getElementById('add-email-input').value.trim().toLowerCase();
             if (!email) return;
@@ -198,8 +215,7 @@
             try {
                 const q = query(collection(db, "users"), where("email", "==", email));
                 const snapshot = await getDocs(q);
-
-                if (snapshot.empty) return alert("Email belum terdaftar di aplikasi.");
+                if (snapshot.empty) return alert("Email belum terdaftar.");
 
                 let friendData;
                 snapshot.forEach(doc => friendData = doc.data());
@@ -212,80 +228,153 @@
             }
         });
 
-        function loadContacts() {
-            const myContactsRef = collection(db, "users", currentUser.uid, "contacts");
-            onSnapshot(myContactsRef, (snapshot) => {
-                chatList.innerHTML = ''; 
-                if (snapshot.empty) {
-                    chatList.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px; font-size:13px;">Belum ada kontak. Tambahkan via email di atas.</p>';
-                    return;
-                }
+        // Buat Grup Baru
+        document.getElementById('btn-create-group').addEventListener('click', async () => {
+            const groupName = document.getElementById('group-name-input').value.trim();
+            if (!groupName) return alert("Masukkan nama grup.");
 
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const photo = data.photoURL || 'https://via.placeholder.com/45';
+            try {
+                const groupRef = doc(collection(db, "groups"));
+                await setDoc(groupRef, {
+                    groupId: groupRef.id,
+                    groupName: groupName,
+                    createdBy: currentUser.uid,
+                    members: [currentUser.uid], // Pembuat otomatis jadi anggota
+                    createdAt: serverTimestamp()
+                });
+
+                alert("Grup berhasil dibuat!");
+                document.getElementById('group-name-input').value = '';
+            } catch (error) {
+                alert("Gagal membuat grup.");
+            }
+        });
+
+        // Memuat Sidebar (Kontak Pribadi & Grup tempat user tergabung)
+        function loadSidebarItems() {
+            chatList.innerHTML = '';
+
+            // 1. Muat Kontak Pribadi
+            const contactsRef = collection(db, "users", currentUser.uid, "contacts");
+            onSnapshot(contactsRef, (snapshot) => {
+                // Hapus elemen kontak lama jika ada sebelum render ulang
+                document.querySelectorAll('.section-private').forEach(el => el.remove());
+
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
                     const div = document.createElement('div');
-                    div.className = 'chat-item';
+                    div.className = 'chat-item section-private';
                     div.innerHTML = `
-                        <img src="${photo}" class="avatar">
+                        <img src="${data.photoURL || 'https://via.placeholder.com/45'}" class="avatar">
                         <div class="chat-info">
                             <p class="chat-name">${data.name}</p>
-                            <p class="chat-preview">${data.email}</p>
+                            <p class="chat-preview">Pribadi</p>
                         </div>
                     `;
                     div.addEventListener('click', () => {
-                        currentRecipientUid = data.uid;
-                        chatMainHeader.innerHTML = `<img src="${photo}" style="width:35px; height:35px; border-radius:50%; margin-right:10px; object-fit:cover;"> ${data.name}`;
-                        loadChatRoom(currentRecipientUid);
+                        activeTargetId = data.uid;
+                        activeTargetType = 'private';
+                        chatMainHeader.innerHTML = `<img src="${data.photoURL}" style="width:35px; height:35px; border-radius:50%; margin-right:10px; object-fit:cover;"> ${data.name}`;
+                        loadChatRoom();
                     });
                     chatList.appendChild(div);
                 });
             });
+
+            // 2. Muat Grup
+            const groupsRef = collection(db, "groups");
+            onSnapshot(groupsRef, (snapshot) => {
+                document.querySelectorAll('.section-group').forEach(el => el.remove());
+
+                snapshot.forEach((docSnap) => {
+                    const gData = docSnap.data();
+                    // Cek apakah user saat ini adalah anggota grup
+                    if (gData.members && gData.members.includes(currentUser.uid)) {
+                        const div = document.createElement('div');
+                        div.className = 'chat-item section-group';
+                        div.innerHTML = `
+                            <div class="avatar" style="background:#00a884; color:white;">👥</div>
+                            <div class="chat-info">
+                                <p class="chat-name">${gData.groupName}</p>
+                                <p class="chat-preview">Grup</p>
+                            </div>
+                        `;
+                        div.addEventListener('click', () => {
+                            activeTargetId = gData.groupId;
+                            activeTargetType = 'group';
+                            chatMainHeader.innerHTML = `👥 ${gData.groupName}`;
+                            loadChatRoom();
+                        });
+                        chatList.appendChild(div);
+                    }
+                });
+            });
         }
 
-        // ================= OBROLAN & RENDER PESAN =================
-        function getChatId(uid1, uid2) {
-            return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+        // ================= OBROLAN & NOTIFIKASI =================
+        function getChatId() {
+            if (activeTargetType === 'private') {
+                return currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`;
+            } else {
+                return activeTargetId; // Untuk grup, ID chat adalah groupId itu sendiri
+            }
         }
 
-        function loadChatRoom(recipientUid) {
+        function loadChatRoom() {
             if (unsubscribeChat) unsubscribeChat();
-            const chatId = getChatId(currentUser.uid, recipientUid);
+            const chatId = getChatId();
             const q = query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc"));
+
+            let isInitialLoad = true;
 
             unsubscribeChat = onSnapshot(q, (snapshot) => {
                 chatHistory.innerHTML = ''; 
+                
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     const div = document.createElement('div');
-                    div.className = data.senderId === currentUser.uid ? 'message sent' : 'message received';
+                    const isMine = data.senderId === currentUser.uid;
+                    div.className = isMine ? 'message sent' : 'message received';
                     
                     const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
                     
                     let content = '';
-                    
-                    // Render berdasarkan tipe pesan
                     if (data.type === 'text') content = data.text;
-                    else if (data.type === 'image') content = `<img src="${data.url}" onclick="window.open('${data.url}', '_blank')"><br>${data.text}`;
-                    else if (data.type === 'file') content = `📄 <a href="${data.url}" target="_blank">Unduh File (${data.fileName})</a><br>${data.text}`;
+                    else if (data.type === 'image') content = `<img src="${data.url}" onclick="window.open('${data.url}', '_blank')"><br>${data.text || ''}`;
+                    else if (data.type === 'file') content = `📄 <a href="${data.url}" target="_blank">Unduh File (${data.fileName})</a>`;
                     else if (data.type === 'location') content = `📍 <a href="https://www.google.com/maps/search/?api=1&query=${data.lat},${data.lng}" target="_blank">Lihat Lokasi di Peta</a>`;
                     else if (data.type === 'audio') content = `<audio controls src="${data.url}"></audio>`;
 
-                    div.innerHTML = `${content} <span class="msg-time">${time}</span>`;
+                    let senderLabel = '';
+                    if (activeTargetType === 'group' && !isMine) {
+                        senderLabel = `<div class="msg-sender">${data.senderName || 'Anggota'}</div>`;
+                    }
+
+                    div.innerHTML = `${senderLabel}${content} <span class="msg-time">${time}</span>`;
                     chatHistory.appendChild(div);
                 });
+
+                // Jika ada pesan baru masuk dari orang lain setelah halaman dimuat, bunyikan notifikasi suara
+                if (!isInitialLoad && !snapshot.empty) {
+                    const lastDoc = snapshot.docs[snapshot.docs.length - 1].data();
+                    if (lastDoc.senderId !== currentUser.uid) {
+                        playNotificationSound();
+                    }
+                }
+
+                isInitialLoad = false;
                 chatHistory.scrollTop = chatHistory.scrollHeight;
             });
         }
 
-        // Fungsi Induk Pengirim Pesan
         async function sendMessageToDb(payload) {
-            if (!currentRecipientUid) return alert("Pilih kontak terlebih dahulu!");
-            const chatId = getChatId(currentUser.uid, currentRecipientUid);
+            if (!activeTargetId) return alert("Pilih kontak atau grup terlebih dahulu!");
+            const chatId = getChatId();
             try {
                 await addDoc(collection(db, "chats", chatId, "messages"), {
                     ...payload,
                     senderId: currentUser.uid,
+                    senderName: currentUser.displayName,
                     timestamp: serverTimestamp()
                 });
             } catch (error) {
@@ -293,7 +382,7 @@
             }
         }
 
-        // 1. Kirim Teks
+        // Kirim Teks
         document.getElementById('btn-send').addEventListener('click', () => {
             const text = inputMessage.value.trim();
             if (text) {
@@ -304,68 +393,53 @@
         });
         inputMessage.addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btn-send').click(); });
 
-        // 2. Kirim File & Foto (Via Cloudinary)
+        // Kirim File / Foto via Cloudinary
         const btnAttach = document.getElementById('btn-attach');
         const fileInput = document.getElementById('file-input');
-        
         btnAttach.addEventListener('click', () => fileInput.click());
         
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
             
-            btnAttach.style.opacity = '0.5'; // Indikator sedang proses
+            btnAttach.style.opacity = '0.5';
             try {
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('upload_preset', CLOUDINARY_PRESET);
 
-                const response = await fetch(CLOUDINARY_URL, {
-                    method: 'POST',
-                    body: formData
-                });
-                
+                const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
                 const data = await response.json();
                 
                 if (data.secure_url) {
                     const type = file.type.startsWith('image/') ? 'image' : 'file';
                     await sendMessageToDb({ type: type, url: data.secure_url, fileName: file.name, text: '' });
-                } else {
-                    throw new Error("Gagal mendapatkan URL dari Cloudinary");
                 }
             } catch (error) {
-                console.error(error);
-                alert("Gagal mengunggah file. Pastikan pengaturan Cloudinary sudah benar.");
+                alert("Gagal mengunggah file.");
             }
             btnAttach.style.opacity = '1';
-            fileInput.value = ''; // Reset input
+            fileInput.value = '';
         });
 
-        // 3. Kirim Lokasi (GPS)
+        // Kirim Lokasi GPS
         document.getElementById('btn-location').addEventListener('click', () => {
-            if (!currentRecipientUid) return alert("Pilih kontak terlebih dahulu!");
-            if (!navigator.geolocation) return alert("Browser Anda tidak mendukung fitur GPS.");
+            if (!activeTargetId) return alert("Pilih tujuan chat dulu!");
+            if (!navigator.geolocation) return alert("GPS tidak didukung.");
             
             navigator.geolocation.getCurrentPosition((position) => {
-                sendMessageToDb({ 
-                    type: 'location', 
-                    lat: position.coords.latitude, 
-                    lng: position.coords.longitude,
-                    text: '' 
-                });
-            }, () => {
-                alert("Gagal mengambil lokasi. Pastikan Anda memberikan izin akses lokasi.");
-            });
+                sendMessageToDb({ type: 'location', lat: position.coords.latitude, lng: position.coords.longitude });
+            }, () => alert("Gagal mengambil lokasi."));
         });
 
-        // 4. Rekam Pesan Suara (Voice Note via Cloudinary)
+        // Rekam Suara (Voice Note)
         const btnMic = document.getElementById('btn-mic');
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
 
         btnMic.addEventListener('click', async () => {
-            if (!currentRecipientUid) return alert("Pilih kontak terlebih dahulu!");
+            if (!activeTargetId) return alert("Pilih tujuan chat dulu!");
 
             if (!isRecording) {
                 try {
@@ -377,28 +451,21 @@
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                         audioChunks = [];
                         
-                        btnMic.style.opacity = '0.5'; // Indikator sedang upload
-                        
+                        btnMic.style.opacity = '0.5';
                         const formData = new FormData();
                         formData.append('file', audioBlob);
                         formData.append('upload_preset', CLOUDINARY_PRESET);
                         formData.append('resource_type', 'auto'); 
 
                         try {
-                            const response = await fetch(CLOUDINARY_URL, {
-                                method: 'POST',
-                                body: formData
-                            });
+                            const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
                             const data = await response.json();
-                            
                             if (data.secure_url) {
-                                await sendMessageToDb({ type: 'audio', url: data.secure_url, text: '' });
+                                await sendMessageToDb({ type: 'audio', url: data.secure_url });
                             }
                         } catch (err) {
-                            console.error(err);
-                            alert("Gagal mengirim pesan suara.");
+                            alert("Gagal mengirim suara.");
                         }
-                        
                         btnMic.style.opacity = '1';
                         stream.getTracks().forEach(track => track.stop());
                     };
@@ -407,7 +474,7 @@
                     isRecording = true;
                     btnMic.classList.add('recording'); 
                 } catch (err) {
-                    alert("Gagal mengakses mikrofon. Pastikan Anda telah memberikan izin.");
+                    alert("Gagal mengakses mikrofon.");
                 }
             } else {
                 mediaRecorder.stop();
@@ -415,7 +482,6 @@
                 btnMic.classList.remove('recording');
             }
         });
-
     </script>
 </body>
 </html>
