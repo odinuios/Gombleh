@@ -343,7 +343,32 @@
             bannerContainer.appendChild(banner);
             setTimeout(() => { if(bannerContainer.contains(banner)) banner.remove(); }, 4500);
         }
+        // Penanganan Tombol Lampiran File/Foto
+const btnAttach = document.getElementById('btn-attach');
+const fileInput = document.getElementById('file-input');
 
+btnAttach.addEventListener('click', () => {
+    fileInput.click();
+});
+
+fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file || !activeTargetId) return;
+
+    // Contoh sederhana: Mengirim nama file atau Anda bisa mengunggahnya ke Firebase Storage
+    const fileName = file.name;
+    const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
+    
+    await addDoc(collection(db, "chats", chatId, "messages"), {
+        senderId: currentUser.uid,
+        senderName: currentUser.displayName,
+        text: `[Lampiran File: ${fileName}]`,
+        type: 'file',
+        timestamp: serverTimestamp()
+    });
+    
+    fileInput.value = '';
+});
         const loginScreen = document.getElementById('login-screen');
         const appContainer = document.getElementById('app-container');
         const chatListContainer = document.getElementById('chat-list-container');
@@ -393,16 +418,23 @@
             }
         });
 
-        async function requestNotificationPermission() {
-            try {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    const messaging = getMessaging(app);
-                    const token = await getToken(messaging, { vapidKey: "GANTI_DENGAN_VAPID_KEY_ANDA_JIKA_ADA" });
-                    if(token) await setDoc(doc(db, "users", currentUser.uid), { fcmToken: token }, { merge: true });
-                }
-            } catch(e) {}
+    async function requestNotificationPermission() {
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            const messaging = getMessaging(app);
+            // Masukkan Web Push Certificate (VAPID Key) dari Firebase Project Settings > Cloud Messaging
+            const token = await getToken(messaging, { 
+                vapidKey: "MASUKKAN_VAPID_KEY_FIREBASE_ANDA_DISINI" 
+            });
+            if (token) {
+                await setDoc(doc(db, "users", currentUser.uid), { fcmToken: token }, { merge: true });
+            }
         }
+    } catch(e) {
+        console.error("Gagal mendapatkan token notifikasi:", e);
+    }
+}
 
         // ================= PERMINTAAN PERTEMANAN =================
         document.getElementById('btn-add-contact').addEventListener('click', async () => {
