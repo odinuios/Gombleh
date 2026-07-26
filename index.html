@@ -142,6 +142,16 @@
             .chat-main.active-mobile { left: 0; }
             #btn-back-mobile { display: block !important; margin-right: 15px; font-size: 20px; background: none; border: none; cursor: pointer; color: #54656f; }
         }
+        .badge-chat-count {
+            background-color: #00a884;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: bold;
+            display: none;
+            margin-left: auto;
+        }
         #btn-back-mobile { display: none; }
     </style>
 </head>
@@ -416,8 +426,8 @@
                 document.getElementById('incoming-call-modal').style.display = 'flex';
                 
                 playRingtone();
-                showNotification("Panggilan Masuk", `${callData.callerName} memanggil Anda...`, 'https://via.placeholder.com/40');
-
+                showNotification("Panggilan Masuk", `${callData.callerName} memanggil Anda...`, 'https://raw.githubusercontent.com/odinuios/Gombleh/refs/heads/main/icon.png');
+                
                 // Listener untuk memantau jika penelepon menutup/membatalkan panggilan
                 const unsubWatch = onSnapshot(doc(db, "calls", currentCallDocId), (ds) => {
                     if (!ds.exists() || ds.data().status !== 'calling') {
@@ -846,6 +856,12 @@
                                 </a>
                             </div>`;
                     } 
+                        else if (msg.type === 'missed_call') {
+                            contentHtml = `
+                                <div style="color: #d9534f; font-weight: 500; display: flex; align-items: center; gap: 5px;">
+                                ${msg.text}
+                                </div>`;
+                    }
                     else {
                         contentHtml = `<span style="white-space: pre-wrap; word-break: break-word;">${msg.text}</span>`;
                     }
@@ -1153,7 +1169,23 @@
                 }
             });
         }
-
+        async function logMissedCallToChat(callerId, calleeId, callMode) {
+        const chatId = callerId < calleeId ? `${callerId}_${calleeId}` : `${calleeId}_${callerId}`;
+        const callTypeText = callMode === 'video' ? '📹 Panggilan Video Tidak Terjawab' : '📞 Panggilan Suara Tidak Terjawab';
+    
+        try {
+        await addDoc(collection(db, "chats", chatId, "messages"), {
+            senderId: callerId,
+            senderName: "Sistem Panggilan",
+            text: callTypeText,
+            type: 'missed_call',
+            status: 'sent',
+            timestamp: serverTimestamp()
+        });
+        } catch (e) {
+        console.error("Gagal mencatat missed call ke chat:", e);
+    }
+}
         // ================= TOMBOL AKSI PANGGILAN MASUK & KELUAR =================
         document.getElementById('btn-answer-call').addEventListener('click', async () => { 
             stopRingtone();
