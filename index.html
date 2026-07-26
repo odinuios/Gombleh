@@ -208,7 +208,7 @@
                 <div class="header">
                     <button id="btn-back-mobile">←</button>
                     <div id="chat-main-header" style="display: flex; align-items: center; gap: 10px;"></div>
-                    <div class="header-actions" id="chat-header-actions">
+                    <div class="header-actions" id="chat-header-actions" style="display: flex; gap: 5px;">
                         <button class="action-btn" id="btn-start-voice-call" title="Panggilan Suara">📞</button>
                         <button class="action-btn" id="btn-start-video-call" title="Video Call">📹</button>
                     </div>
@@ -442,7 +442,7 @@
             } catch (error) { alert("Gagal membuat grup."); }
         });
 
-function loadSidebarItems() {
+        function loadSidebarItems() {
             chatListContainer.innerHTML = '';
             contactListContainer.innerHTML = '';
             
@@ -452,11 +452,9 @@ function loadSidebarItems() {
                 snapshot.forEach((docSnap) => {
                     const contactData = docSnap.data();
                     
-                    // Ambil data terbaru langsung dari dokumen user utama agar nama/foto selalu sinkron
                     onSnapshot(doc(db, "users", contactData.uid), (userDoc) => {
                         const latestData = userDoc.exists() ? userDoc.data() : contactData;
                         
-                        // Hapus elemen lama jika ada untuk mencegah duplikasi saat update real-time
                         const existingEl = document.getElementById(`contact-${contactData.uid}`);
                         if (existingEl) existingEl.remove();
 
@@ -473,8 +471,7 @@ function loadSidebarItems() {
                         div.addEventListener('click', () => openChat(latestData.uid, latestData.name, latestData.photoURL, 'private'));
                         
                         contactListContainer.appendChild(div);
-                        chatListContainer.appendChild(div.cloneNode(true)); // Untuk disinkronkan ke tab chat juga
-                        // (Opsional: Anda bisa memisahkan container chat dan kontak jika ingin render mandiri, namun cara ini langsung memperbarui keduanya)
+                        chatListContainer.appendChild(div.cloneNode(true));
                     });
                 });
             });
@@ -510,6 +507,8 @@ function loadSidebarItems() {
             let avatarHtml = type === 'group' ? `<div class="avatar" style="background:#00a884; color:white; width:35px; height:35px; font-size:15px; margin:0;">👥</div>` : `<img src="${photo || 'https://via.placeholder.com/45'}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">`;
             
             chatMainHeader.innerHTML = `${avatarHtml} <span style="font-weight:bold; font-size: 16px;">${name}</span>`;
+            
+            // Memastikan tombol aksi (panggilan suara & video) muncul kembali khusus chat privat
             chatHeaderActions.style.display = (type === 'private') ? 'flex' : 'none';
 
             if (window.innerWidth <= 768) chatMainArea.classList.add('active-mobile');
@@ -643,7 +642,7 @@ function loadSidebarItems() {
                 localVideo.style.display = 'none';
                 remoteVideo.style.display = 'none';
                 document.getElementById('active-call-avatar').style.display = 'block';
-                document.getElementById('active-call-avatar').src = activeTargetName ? 'https://via.placeholder.com/100' : '';
+                document.getElementById('active-call-avatar').src = 'https://via.placeholder.com/100';
             }
 
             pc = new RTCPeerConnection(servers);
@@ -737,6 +736,7 @@ function loadSidebarItems() {
                 localVideo.style.display = 'none';
                 remoteVideo.style.display = 'none';
                 document.getElementById('active-call-avatar').style.display = 'block';
+                document.getElementById('active-call-avatar').src = 'https://via.placeholder.com/100';
             }
 
             pc = new RTCPeerConnection(servers);
