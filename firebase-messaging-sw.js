@@ -14,13 +14,43 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// Menangani pesan saat berjalan di background
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Menerima pesan background ', payload);
-  const notificationTitle = payload.notification.title || 'Pesan Baru Gibah';
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: 'https://raw.githubusercontent.com/odinuios/Gombleh/refs/heads/main/icon.png'
-  };
-  self.registration.showNotification(notificationTitle, notificationOptions);
+    console.log('[firebase-messaging-sw.js] Menerima pesan background ', payload);
+    
+    // Konfigurasi Default
+    let notificationTitle = payload.data?.title || 'Pesan Baru Gibah';
+    let notificationOptions = {
+        body: payload.data?.body || 'Anda mendapat pemberitahuan baru.',
+        icon: 'https://raw.githubusercontent.com/odinuios/Gombleh/refs/heads/main/icon.png',
+        vibrate: [200, 100, 200], // Getar standar
+        requireInteraction: false // Notifikasi bisa hilang sendiri
+    };
+
+    // Jika ini adalah panggilan telepon (Call)
+    if (payload.data?.type === 'call') {
+        notificationTitle = `📞 Panggilan dari ${payload.data.callerName}`;
+        notificationOptions.body = 'Ketuk untuk menjawab panggilan...';
+        notificationOptions.vibrate = [500, 1000, 500, 1000, 500, 1000]; // Getar panjang berulang
+        notificationOptions.requireInteraction = true; // Notifikasi tidak hilang sampai diklik
+        notificationOptions.tag = 'incoming_call'; // Agar notifikasi panggilan tidak menumpuk
+    }
+
+    self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Event ketika notifikasi di-klik di background
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+            if (clientList.length > 0) {
+                let client = clientList[0];
+                for (let i = 0; i < clientList.length; i++) {
+                    if (clientList[i].focused) client = clientList[i];
+                }
+                return client.focus();
+            }
+            return clients.openWindow('/'); // Sesuaikan dengan URL root aplikasi Anda
+        })
+    );
 });
