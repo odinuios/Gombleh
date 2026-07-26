@@ -380,80 +380,97 @@
             setTimeout(() => { if(bannerContainer.contains(banner)) banner.remove(); }, 4500);
         }
 
-        // ================= PENANGANAN LAMPIRAN (FOTO, KAMERA, FILE, LOKASI) =================
-        const btnAttach = document.getElementById('btn-attach');
-        const attachMenu = document.getElementById('attach-menu');
+// ================= PENANGANAN LAMPIRAN (FOTO, KAMERA, FILE, LOKASI) =================
+const btnAttach = document.getElementById('btn-attach');
+const attachMenu = document.getElementById('attach-menu');
+const inputPhoto = document.getElementById('input-photo');
+const inputCamera = document.getElementById('input-camera');
+const inputFile = document.getElementById('input-file');
 
-        const inputPhoto = document.getElementById('input-photo');
-        const inputCamera = document.getElementById('input-camera');
-        const inputFile = document.getElementById('input-file');
+btnAttach.addEventListener('click', (e) => {
+    e.stopPropagation();
+    attachMenu.classList.toggle('show');
+});
 
-        // Buka/Tutup menu lampiran
-        btnAttach.addEventListener('click', (e) => {
-            e.stopPropagation();
-            attachMenu.classList.toggle('show');
+window.addEventListener('click', () => {
+    if (attachMenu && attachMenu.classList.contains('show')) attachMenu.classList.remove('show');
+});
+
+document.getElementById('attach-photo').addEventListener('click', () => inputPhoto.click());
+document.getElementById('attach-camera').addEventListener('click', () => inputCamera.click());
+document.getElementById('attach-file').addEventListener('click', () => inputFile.click());
+
+// Fungsi baru untuk menangani upload
+async function handleAttachment(e) {
+    const file = e.target.files[0];
+    if (!file || !activeTargetId) return;
+
+    const inputId = e.target.id;
+    const isImage = (inputId === 'input-photo' || inputId === 'input-camera');
+    const msgType = isImage ? 'image' : 'file';
+    const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
+    
+    // Tampilkan indikator loading (opsional, menggunakan teks tombol)
+    const originalBtnText = btnAttach.innerText;
+    btnAttach.innerText = "⏳";
+    btnAttach.disabled = true;
+
+    try {
+        // Upload ke Firebase Storage
+        const storageRef = ref(storage, `chats/${chatId}/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const fileUrl = await getDownloadURL(storageRef);
+        
+        // Simpan URL ke Firestore
+        await addDoc(collection(db, "chats", chatId, "messages"), {
+            senderId: currentUser.uid,
+            senderName: currentUser.displayName,
+            text: isImage ? '📷 Foto' : `📄 ${file.name}`, // Teks fallback
+            fileUrl: fileUrl,
+            fileName: file.name,
+            type: msgType,
+            status: 'sent',
+            timestamp: serverTimestamp()
         });
+    } catch (error) {
+        console.error("Gagal mengirim lampiran:", error);
+        alert("Gagal mengunggah file. Pastikan ukuran tidak terlalu besar.");
+    } finally {
+        btnAttach.innerText = "📎";
+        btnAttach.disabled = false;
+        e.target.value = ''; // Reset input
+    }
+}
 
-        // Tutup menu jika klik di luar area
-        window.addEventListener('click', () => {
-            if (attachMenu && attachMenu.classList.contains('show')) {
-                attachMenu.classList.remove('show');
-            }
+inputPhoto.addEventListener('change', handleAttachment);
+inputCamera.addEventListener('change', handleAttachment);
+inputFile.addEventListener('change', handleAttachment);
+
+// Fitur Kirim Lokasi yang disempurnakan
+document.getElementById('attach-location').addEventListener('click', () => {
+    if (!navigator.geolocation) {
+        alert("Geolokasi tidak didukung di browser Anda.");
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        if (!activeTargetId) return;
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const locationLink = `https://www.google.com/maps?q=${lat},${lon}`;
+        const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
+        
+        await addDoc(collection(db, "chats", chatId, "messages"), {
+            senderId: currentUser.uid,
+            senderName: currentUser.displayName,
+            text: locationLink,
+            type: 'location',
+            status: 'sent',
+            timestamp: serverTimestamp()
         });
-
-        // Memicu input file tersembunyi
-        document.getElementById('attach-photo').addEventListener('click', () => inputPhoto.click());
-        document.getElementById('attach-camera').addEventListener('click', () => inputCamera.click());
-        document.getElementById('attach-file').addEventListener('click', () => inputFile.click());
-
-        async function handleAttachment(e) {
-            const file = e.target.files[0];
-            if (!file || !activeTargetId) return;
-
-            const fileName = file.name;
-            const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
-            
-            await addDoc(collection(db, "chats", chatId, "messages"), {
-                senderId: currentUser.uid,
-                senderName: currentUser.displayName,
-                text: `[Lampiran: ${fileName}]`,
-                type: 'file',
-                timestamp: serverTimestamp()
-            });
-            
-            e.target.value = ''; // Reset input agar bisa mengirim file yang sama lagi
-        }
-
-        inputPhoto.addEventListener('change', handleAttachment);
-        inputCamera.addEventListener('change', handleAttachment);
-        inputFile.addEventListener('change', handleAttachment);
-
-        // Fitur Kirim Lokasi
-        document.getElementById('attach-location').addEventListener('click', () => {
-            if (!navigator.geolocation) {
-                alert("Geolokasi tidak didukung di browser Anda.");
-                return;
-            }
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                if (!activeTargetId) return;
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
-                const locationLink = `https://www.google.com/maps?q=${lat},${lon}`;
-                
-                const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
-                
-                await addDoc(collection(db, "chats", chatId, "messages"), {
-                    senderId: currentUser.uid,
-                    senderName: currentUser.displayName,
-                    text: `📍 [Lokasi Saya](${locationLink})`,
-                    type: 'location',
-                    timestamp: serverTimestamp()
-                });
-            }, () => {
-                alert("Gagal mengambil lokasi. Pastikan izin lokasi diberikan.");
-            });
-        });
-
+    }, () => {
+        alert("Gagal mengambil lokasi. Pastikan izin lokasi diberikan.");
+    });
+});
         const loginScreen = document.getElementById('login-screen');
         const appContainer = document.getElementById('app-container');
         const chatListContainer = document.getElementById('chat-list-container');
@@ -697,38 +714,63 @@
             
             unsubscribeChat = onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc")), (snapshot) => {
                 chatHistory.innerHTML = '';
-                snapshot.forEach(docSnap => {
-                    const msg = docSnap.data();
-                    const isMe = msg.senderId === currentUser.uid;
-                    
-                    if (!isMe && msg.status !== 'read') {
-                        updateDoc(docSnap.ref, { status: 'read' });
-                    }
+snapshot.forEach(docSnap => {
+    const msg = docSnap.data();
+    const isMe = msg.senderId === currentUser.uid;
+    
+    if (!isMe && msg.status !== 'read') {
+        updateDoc(docSnap.ref, { status: 'read' });
+    }
 
-                    const msgDiv = document.createElement('div');
-                    msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
-                    
-                    let senderInfo = '';
-                    if (!isMe && type === 'group') {
-                        senderInfo = `<div class="msg-sender">${msg.senderName}</div>`;
-                    }
-                    
-                    let tickHtml = '';
-                    if (isMe && type === 'private') {
-                        if (msg.status === 'read') {
-                            tickHtml = `<span class="msg-status tick-read">✓✓</span>`;
-                        } else if (msg.status === 'delivered') {
-                            tickHtml = `<span class="msg-status tick-delivered">✓✓</span>`;
-                        } else {
-                            tickHtml = `<span class="msg-status tick-sent">✓</span>`;
-                        }
-                    }
-                    
-                    const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-                    msgDiv.innerHTML = `${senderInfo}${msg.text}<div class="msg-time-container"><span class="msg-time">${time}</span>${tickHtml}</div>`;
-                    
-                    chatHistory.appendChild(msgDiv);
-                });
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
+    
+    let senderInfo = '';
+    if (!isMe && type === 'group') {
+        senderInfo = `<div class="msg-sender">${msg.senderName}</div>`;
+    }
+    
+    let tickHtml = '';
+    if (isMe && type === 'private') {
+        if (msg.status === 'read') tickHtml = `<span class="msg-status tick-read">✓✓</span>`;
+        else if (msg.status === 'delivered') tickHtml = `<span class="msg-status tick-delivered">✓✓</span>`;
+        else tickHtml = `<span class="msg-status tick-sent">✓</span>`;
+    }
+    
+    const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+
+    // LOGIKA PENAMPILAN BERDASARKAN TIPE
+    let contentHtml = '';
+    if (msg.type === 'image') {
+        contentHtml = `
+            <img src="${msg.fileUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; cursor: pointer; display: block;" 
+                 onclick="window.open('${msg.fileUrl}', '_blank')" alt="Foto">`;
+    } 
+    else if (msg.type === 'file') {
+        contentHtml = `
+            <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; border: 1px solid rgba(0,0,0,0.1);">
+                <span style="font-size: 24px;">📄</span>
+                <a href="${msg.fileUrl}" target="_blank" download="${msg.fileName}" style="color: #00766c; text-decoration: none; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" title="Unduh File">
+                    ${msg.fileName}
+                </a>
+            </div>`;
+    }
+    else if (msg.type === 'location') {
+        contentHtml = `
+            <div style="background: rgba(0,0,0,0.05); padding: 10px; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(0,0,0,0.1);">
+                <a href="${msg.text}" target="_blank" style="color: #00766c; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+                    📍 Buka Lokasi di Maps
+                </a>
+            </div>`;
+    } 
+    else {
+        contentHtml = `<span style="white-space: pre-wrap; word-break: break-word;">${msg.text}</span>`;
+    }
+
+    msgDiv.innerHTML = `${senderInfo}${contentHtml}<div class="msg-time-container"><span class="msg-time">${time}</span>${tickHtml}</div>`;
+    
+    chatHistory.appendChild(msgDiv);
+});
                 chatHistory.scrollTop = chatHistory.scrollHeight;
             });
         }
