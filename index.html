@@ -46,7 +46,7 @@
         .name { font-weight: 500; font-size: 16px; margin: 0 0 3px 0; color: #111b21; }
         .preview { font-size: 13px; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
 
-        /* Navigasi Bawah (Tabs) - Dipastikan selalu muncul di bawah */
+        /* Navigasi Bawah (Tabs) */
         .tab-nav { display: flex; background: #f0f2f5; border-top: 1px solid #ddd; height: 60px; flex-shrink: 0; width: 100%; z-index: 5; }
         .tab-btn { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: none; border: none; cursor: pointer; color: #54656f; font-size: 12px; font-weight: 500; gap: 4px; transition: 0.2s; }
         .tab-btn:hover { background: #e9edef; }
@@ -62,7 +62,7 @@
         /* Ruang Obrolan (Kanan) */
         .chat-main { flex: 1 1 auto; display: flex; flex-direction: column; background-color: #f0f2f5; width: 100%; height: 100%; overflow: hidden; position: relative;}
         
-        /* Layar Kosong (Blank State) */
+        /* Layar Kosong */
         #chat-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; text-align: center; color: #667781; background-color: #f0f2f5; }
         #chat-empty-state h1 { font-weight: 300; margin-bottom: 10px; color: #41525d; }
 
@@ -87,8 +87,8 @@
         .action-btn:hover { background: #d9d9d9; }
         .btn-send { background-color: #00a884; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-        /* Modal Panggilan Suara */
-        .call-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.85); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; backdrop-filter: blur(5px); }
+        /* Modal Panggilan Video / Suara */
+        .call-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; }
         .call-avatar { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 20px; object-fit: cover; border: 3px solid #00a884; }
         .call-modal h2 { margin: 0 0 10px 0; font-size: 24px; font-weight: 500; }
         .call-modal p { color: #ccc; margin-bottom: 30px; }
@@ -209,7 +209,7 @@
                     <button id="btn-back-mobile">←</button>
                     <div id="chat-main-header" style="display: flex; align-items: center; gap: 10px;"></div>
                     <div class="header-actions" id="chat-header-actions">
-                        <button class="action-btn" id="btn-start-call" title="Telepon Suara">📞</button>
+                        <button class="action-btn" id="btn-start-call" title="Video Call">📹</button>
                     </div>
                 </div>
                 
@@ -225,23 +225,26 @@
         </div>
     </div>
 
-    <!-- Modals Panggilan WebRTC -->
+    <!-- Modals Panggilan Masuk -->
     <div id="incoming-call-modal" class="call-modal">
         <h2 id="incoming-caller-name">Seseorang</h2>
-        <p>Memanggil Suara...</p>
+        <p>Panggilan Video Masuk...</p>
         <div class="call-actions">
             <button class="btn-call btn-reject" id="btn-reject-call" title="Tolak">✖</button>
-            <button class="btn-call btn-answer" id="btn-answer-call" title="Jawab">📞</button>
+            <button class="btn-call btn-answer" id="btn-answer-call" title="Jawab">📹</button>
         </div>
     </div>
 
+    <!-- Modal Panggilan Aktif (Video Call) -->
     <div id="active-call-modal" class="call-modal">
-        <img src="https://via.placeholder.com/100" id="active-call-avatar" class="call-avatar">
-        <h2 id="active-call-name">Nama Kontak</h2>
-        <p id="active-call-status">Memanggil...</p>
-        <audio id="remote-audio" autoplay></audio>
-        <div class="call-actions">
-            <button class="btn-call btn-reject" id="btn-end-call" title="Akhiri">☎</button>
+        <video id="remote-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;"></video>
+        <video id="local-video" autoplay playsinline muted style="width: 100px; height: 140px; object-fit: cover; position: absolute; top: 20px; right: 20px; border-radius: 10px; border: 2px solid white; z-index: 2; background: #000;"></video>
+        
+        <div style="z-index: 3; position: relative; margin-top: auto; margin-bottom: 30px; display: flex; flex-direction: column; align-items: center; width: 100%;">
+            <p id="active-call-status" style="margin-bottom: 15px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px;">Memanggil...</p>
+            <div class="call-actions">
+                <button class="btn-call btn-reject" id="btn-end-call" title="Akhiri">☎</button>
+            </div>
         </div>
     </div>
 
@@ -559,7 +562,7 @@
             fileInput.value = '';
         });
 
-        // ================= WEBRTC PANGGILAN SUARA =================
+        // ================= WEBRTC VIDEO CALL =================
         const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }] };
         let pc = null;
         let localStream = null;
@@ -568,7 +571,8 @@
 
         const modalIncoming = document.getElementById('incoming-call-modal');
         const modalActive = document.getElementById('active-call-modal');
-        const remoteAudio = document.getElementById('remote-audio');
+        const remoteVideo = document.getElementById('remote-video');
+        const localVideo = document.getElementById('local-video');
 
         async function logCallToHistory(type, status, peerName) {
             await addDoc(collection(db, "users", currentUser.uid, "call_history"), {
@@ -589,7 +593,7 @@
                     const div = document.createElement('div');
                     div.className = 'list-item';
                     div.innerHTML = `
-                        <div class="avatar" style="background:#f0f2f5;">📞</div>
+                        <div class="avatar" style="background:#f0f2f5;">📹</div>
                         <div class="info">
                             <p class="name">${data.peerName}</p>
                             <p class="preview"><span style="color:${statusColor}">${icon} ${data.status}</span> • ${time}</p>
@@ -604,18 +608,18 @@
             if (activeTargetType !== 'private') return;
             
             modalActive.style.display = 'flex';
-            document.getElementById('active-call-name').innerText = activeTargetName;
-            document.getElementById('active-call-status').innerText = "Memanggil...";
+            document.getElementById('active-call-status').innerText = "Memanggil Video...";
 
             pc = new RTCPeerConnection(servers);
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                localVideo.srcObject = localStream;
                 localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             } catch (e) {
-                alert("Gagal akses mikrofon!"); stopCallCleanup(); return;
+                alert("Gagal akses kamera/mikrofon!"); stopCallCleanup(); return;
             }
 
-            pc.ontrack = event => { remoteAudio.srcObject = event.streams[0]; };
+            pc.ontrack = event => { remoteVideo.srcObject = event.streams[0]; };
 
             const callDocRef = doc(collection(db, "calls"));
             currentCallDocId = callDocRef.id;
@@ -673,18 +677,18 @@
         document.getElementById('btn-answer-call').addEventListener('click', async () => {
             modalIncoming.style.display = 'none';
             modalActive.style.display = 'flex';
-            document.getElementById('active-call-name').innerText = document.getElementById('incoming-caller-name').innerText;
-            document.getElementById('active-call-status').innerText = "Menghubungkan...";
+            document.getElementById('active-call-status').innerText = "Menghubungkan Video...";
 
             pc = new RTCPeerConnection(servers);
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                localVideo.srcObject = localStream;
                 localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             } catch (e) {
-                alert("Gagal akses mikrofon!"); stopCallCleanup(); return;
+                alert("Gagal akses kamera/mikrofon!"); stopCallCleanup(); return;
             }
 
-_pc.ontrack = event => { remoteAudio.srcObject = event.streams[0]; };
+            pc.ontrack = event => { remoteVideo.srcObject = event.streams[0]; };
 
             const callDocRef = doc(db, "calls", currentCallDocId);
             const offerCandidates = collection(callDocRef, 'offerCandidates');
@@ -733,7 +737,12 @@ _pc.ontrack = event => { remoteAudio.srcObject = event.streams[0]; };
 
         function stopCallCleanup() {
             if (pc) { pc.close(); pc = null; }
-            if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
+            if (localStream) { 
+                localStream.getTracks().forEach(track => track.stop()); 
+                localStream = null; 
+            }
+            if (localVideo.srcObject) localVideo.srcObject = null;
+            if (remoteVideo.srcObject) remoteVideo.srcObject = null;
             if (callSnapshotUnsub) { callSnapshotUnsub(); callSnapshotUnsub = null; }
             modalActive.style.display = 'none';
             modalIncoming.style.display = 'none';
