@@ -1,0 +1,21 @@
+{
+  "name": "Web Chat Pro",
+  "short_name": "ChatPro",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#d1d7db",
+  "theme_color": "#00a884",
+  "description": "Aplikasi Chat dan Panggilan Suara WebRTC",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192/00a884/FFFFFF?text=WC",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512/00a884/FFFFFF?text=WC",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
