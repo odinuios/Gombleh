@@ -11,38 +11,38 @@
         body { margin: 0; font-family: 'Segoe UI', Helvetica, sans-serif; background-color: #d1d7db; display: flex; height: 100vh; height: 100dvh; justify-content: center; align-items: center; overflow: hidden; position: relative;}
 
         /* --- NATIVE APP FEEL --- */
-body {
-    -webkit-touch-callout: none; /* Hindari popup saat tekan lama di iOS */
-    -webkit-user-select: none; /* Cegah blok teks/copy-paste di UI */
-    user-select: none;
-    -webkit-tap-highlight-color: transparent; /* Hilangkan kotak biru saat tombol ditekan */
-    overscroll-behavior-y: none; /* Cegah efek pull-to-refresh browser */
-}
+        body {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+        }
 
-/* Izinkan ketik di input */
-input, textarea {
-    -webkit-user-select: auto;
-    user-select: auto;
-}
+        /* Izinkan ketik di input */
+        input, textarea {
+            -webkit-user-select: auto;
+            user-select: auto;
+        }
 
-/* --- HAPUS BANNER VERCEL --- */
-#__vercel-live-feedback,
-.vercel-live-feedback,
-vercel-live-feedback,
-#vercel-live-indicator {
-    display: none !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
+        /* --- HAPUS BANNER VERCEL --- */
+        #__vercel-live-feedback,
+        .vercel-live-feedback,
+        vercel-live-feedback,
+        #vercel-live-indicator {
+            display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
 
-/* --- GAYA UNTUK CENTANG (TICKS) --- */
-.msg-status {
-    font-size: 11px;
-    margin-left: 4px;
-    display: inline-block;
-}
-.tick-sent, .tick-delivered { color: #8696a0; }
-.tick-read { color: #53bdeb; }
+        /* --- GAYA UNTUK CENTANG (TICKS) --- */
+        .msg-status {
+            font-size: 11px;
+            margin-left: 4px;
+            display: inline-block;
+        }
+        .tick-sent, .tick-delivered { color: #8696a0; }
+        .tick-read { color: #53bdeb; }
         
         /* Banner In-App */
         .banner-container { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; pointer-events: none;}
@@ -128,14 +128,6 @@ vercel-live-feedback,
         .chat-input-area input[type="text"] { flex: 1; border: none; padding: 12px 15px; border-radius: 8px; outline: none; font-size: 15px; }
         .action-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #54656f; padding: 5px; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
         .btn-send { background-color: #00a884; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        await addDoc(collection(db, "chats", chatId, "messages"), {
-    senderId: currentUser.uid,
-    senderName: currentUser.displayName,
-    text: text,
-    type: 'text',
-    status: 'sent', // Tambahkan baris ini
-    timestamp: serverTimestamp()
-});
         
         /* Modals */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: center; align-items: center; }
@@ -210,7 +202,6 @@ vercel-live-feedback,
                 <div id="tab-contacts" class="tab-pane">
                     <div class="header"><span style="font-size: 20px; font-weight: bold;">Kontak</span></div>
                     
-                    <!-- Input tersembunyi yang akan muncul saat salah satu menu dipilih -->
                     <div id="input-container-friend" class="menu-box hidden" style="background: #f9f9f9;">
                         <div class="menu-row">
                             <input type="email" id="add-email-input" placeholder="Email teman..." autocomplete="off">
@@ -224,11 +215,10 @@ vercel-live-feedback,
                             <button id="btn-create-group" style="background:#005c4b;">Buat</button>
                         </div>
                     </div>
-                    <!-- Permintaan Pertemanan -->
+                    
                     <div id="friend-requests-container" style="background: #f5f6f6;"></div>
                     <div class="list-container" id="contact-list-container"></div>
 
-                    <!-- Tombol FAB dipindahkan ke kanan bawah -->
                     <div class="fab-container">
                         <button id="btn-main-plus" style="background: #00a884; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">+</button>
                         <div id="dropdown-action-menu" class="dropdown-menu">
@@ -386,32 +376,33 @@ vercel-live-feedback,
             bannerContainer.appendChild(banner);
             setTimeout(() => { if(bannerContainer.contains(banner)) banner.remove(); }, 4500);
         }
+
         // Penanganan Tombol Lampiran File/Foto
-const btnAttach = document.getElementById('btn-attach');
-const fileInput = document.getElementById('file-input');
+        const btnAttach = document.getElementById('btn-attach');
+        const fileInput = document.getElementById('file-input');
 
-btnAttach.addEventListener('click', () => {
-    fileInput.click();
-});
+        btnAttach.addEventListener('click', () => {
+            fileInput.click();
+        });
 
-fileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file || !activeTargetId) return;
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !activeTargetId) return;
 
-    // Contoh sederhana: Mengirim nama file atau Anda bisa mengunggahnya ke Firebase Storage
-    const fileName = file.name;
-    const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
-    
-    await addDoc(collection(db, "chats", chatId, "messages"), {
-        senderId: currentUser.uid,
-        senderName: currentUser.displayName,
-        text: `[Lampiran File: ${fileName}]`,
-        type: 'file',
-        timestamp: serverTimestamp()
-    });
-    
-    fileInput.value = '';
-});
+            const fileName = file.name;
+            const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
+            
+            await addDoc(collection(db, "chats", chatId, "messages"), {
+                senderId: currentUser.uid,
+                senderName: currentUser.displayName,
+                text: `[Lampiran File: ${fileName}]`,
+                type: 'file',
+                timestamp: serverTimestamp()
+            });
+            
+            fileInput.value = '';
+        });
+
         const loginScreen = document.getElementById('login-screen');
         const appContainer = document.getElementById('app-container');
         const chatListContainer = document.getElementById('chat-list-container');
@@ -461,23 +452,22 @@ fileInput.addEventListener('change', async (e) => {
             }
         });
 
-    async function requestNotificationPermission() {
-    try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            const messaging = getMessaging(app);
-            // Masukkan Web Push Certificate (VAPID Key) dari Firebase Project Settings > Cloud Messaging
-            const token = await getToken(messaging, { 
-                vapidKey: "BK1FltIiH95S8vYRIYSdAsXu-PCDq6V2BmH0nHr6rOzU_AyJT_mXA3ToyVjylQ-y40aoouSxAfNxiiZJYOaEr-o" 
-            });
-            if (token) {
-                await setDoc(doc(db, "users", currentUser.uid), { fcmToken: token }, { merge: true });
+        async function requestNotificationPermission() {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const messaging = getMessaging(app);
+                    const token = await getToken(messaging, { 
+                        vapidKey: "BK1FltIiH95S8vYRIYSdAsXu-PCDq6V2BmH0nHr6rOzU_AyJT_mXA3ToyVjylQ-y40aoouSxAfNxiiZJYOaEr-o" 
+                    });
+                    if (token) {
+                        await setDoc(doc(db, "users", currentUser.uid), { fcmToken: token }, { merge: true });
+                    }
+                }
+            } catch(e) {
+                console.error("Gagal mendapatkan token notifikasi:", e);
             }
         }
-    } catch(e) {
-        console.error("Gagal mendapatkan token notifikasi:", e);
-    }
-}
 
         // ================= PERMINTAAN PERTEMANAN =================
         document.getElementById('btn-add-contact').addEventListener('click', async () => {
@@ -609,20 +599,27 @@ fileInput.addEventListener('change', async (e) => {
         }
 
         function setupChatNotificationListener(chatId, chatName, chatPhoto, type) {
+            // Flag ini berfungsi untuk mencegah notifikasi muncul saat pertama kali memuat data lama
+            let isInitialLoad = true;
             onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "desc"), limit(1)), (snapshot) => {
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added') {
-                        const msgData = change.doc.data();
-                        const targetCompareId = type === 'private' ? chatId.replace(currentUser.uid, '').replace('_', '') : chatId;
-                        if (msgData.senderId !== currentUser.uid && activeTargetId !== targetCompareId) {
-                            if (!processedMessages.has(change.doc.id)) {
-                                processedMessages.add(change.doc.id);
-                                const txt = msgData.type === 'text' ? msgData.text : 'Mengirim pesan...';
-                                showNotification(type === 'group' ? `${chatName} (${msgData.senderName})` : chatName, txt, chatPhoto);
+                        // Hanya proses notifikasi jika ini bukan loading pertama
+                        if (!isInitialLoad) {
+                            const msgData = change.doc.data();
+                            const targetCompareId = type === 'private' ? chatId.replace(currentUser.uid, '').replace('_', '') : chatId;
+                            if (msgData.senderId !== currentUser.uid && activeTargetId !== targetCompareId) {
+                                if (!processedMessages.has(change.doc.id)) {
+                                    processedMessages.add(change.doc.id);
+                                    const txt = msgData.type === 'text' ? msgData.text : 'Mengirim pesan...';
+                                    showNotification(type === 'group' ? `${chatName} (${msgData.senderName})` : chatName, txt, chatPhoto);
+                                }
                             }
                         }
                     }
                 });
+                // Setelah load pertama selesai, ubah flag menjadi false
+                isInitialLoad = false;
             });
         }
 
@@ -645,50 +642,48 @@ fileInput.addEventListener('change', async (e) => {
         }
 
         function loadChatRoom(targetId, type) {
-    if (unsubscribeChat) unsubscribeChat();
-    
-    const chatId = type === 'group' ? targetId : (currentUser.uid < targetId ? `${currentUser.uid}_${targetId}` : `${targetId}_${currentUser.uid}`);
-    const chatHistory = document.querySelector('.chat-history');
-    
-    unsubscribeChat = onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc")), (snapshot) => {
-        chatHistory.innerHTML = '';
-        snapshot.forEach(docSnap => {
-            const msg = docSnap.data();
-            const isMe = msg.senderId === currentUser.uid;
+            if (unsubscribeChat) unsubscribeChat();
             
-            // --- Logika Update Read Status ---
-            if (!isMe && msg.status !== 'read') {
-                updateDoc(docSnap.ref, { status: 'read' });
-            }
+            const chatId = type === 'group' ? targetId : (currentUser.uid < targetId ? `${currentUser.uid}_${targetId}` : `${targetId}_${currentUser.uid}`);
+            const chatHistory = document.querySelector('.chat-history');
+            
+            unsubscribeChat = onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc")), (snapshot) => {
+                chatHistory.innerHTML = '';
+                snapshot.forEach(docSnap => {
+                    const msg = docSnap.data();
+                    const isMe = msg.senderId === currentUser.uid;
+                    
+                    if (!isMe && msg.status !== 'read') {
+                        updateDoc(docSnap.ref, { status: 'read' });
+                    }
 
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
-            
-            let senderInfo = '';
-            if (!isMe && type === 'group') {
-                senderInfo = `<div class="msg-sender">${msg.senderName}</div>`;
-            }
-            
-            // --- Logika Render Ticks ---
-            let tickHtml = '';
-            if (isMe && type === 'private') {
-                if (msg.status === 'read') {
-                    tickHtml = `<span class="msg-status tick-read">✓✓</span>`;
-                } else if (msg.status === 'delivered') {
-                    tickHtml = `<span class="msg-status tick-delivered">✓✓</span>`;
-                } else {
-                    tickHtml = `<span class="msg-status tick-sent">✓</span>`;
-                }
-            }
-            
-            const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-            msgDiv.innerHTML = `${senderInfo}${msg.text}<div class="msg-time-container"><span class="msg-time">${time}</span>${tickHtml}</div>`;
-            
-            chatHistory.appendChild(msgDiv);
-        });
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-    });
-}
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
+                    
+                    let senderInfo = '';
+                    if (!isMe && type === 'group') {
+                        senderInfo = `<div class="msg-sender">${msg.senderName}</div>`;
+                    }
+                    
+                    let tickHtml = '';
+                    if (isMe && type === 'private') {
+                        if (msg.status === 'read') {
+                            tickHtml = `<span class="msg-status tick-read">✓✓</span>`;
+                        } else if (msg.status === 'delivered') {
+                            tickHtml = `<span class="msg-status tick-delivered">✓✓</span>`;
+                        } else {
+                            tickHtml = `<span class="msg-status tick-sent">✓</span>`;
+                        }
+                    }
+                    
+                    const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                    msgDiv.innerHTML = `${senderInfo}${msg.text}<div class="msg-time-container"><span class="msg-time">${time}</span>${tickHtml}</div>`;
+                    
+                    chatHistory.appendChild(msgDiv);
+                });
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            });
+        }
 
         document.getElementById('btn-send').addEventListener('click', async () => {
             const input = document.getElementById('message-input');
@@ -702,6 +697,7 @@ fileInput.addEventListener('change', async (e) => {
                 senderName: currentUser.displayName,
                 text: text,
                 type: 'text',
+                status: 'sent',
                 timestamp: serverTimestamp()
             });
             input.value = '';
@@ -993,52 +989,52 @@ fileInput.addEventListener('change', async (e) => {
             groupInputBox.classList.toggle('hidden');
             friendInputBox.classList.add('hidden');
         });
-const storage = getStorage(app);
-
-// Logika Ganti Foto & Simpan Profil
-const photoInput = document.getElementById('profile-photo-input');
-const avatarPreview = document.getElementById('profile-avatar-preview');
-let selectedProfileFile = null;
-
-avatarPreview.addEventListener('click', () => photoInput.click());
-
-photoInput.addEventListener('change', (e) => {
-    if (e.target.files[0]) {
-        selectedProfileFile = e.target.files[0];
-        avatarPreview.src = URL.createObjectURL(selectedProfileFile);
-    }
-});
-
-document.getElementById('btn-save-profile').addEventListener('click', async () => {
-    const newName = document.getElementById('profile-name-input').value.trim();
-    if (!newName) return alert("Nama tidak boleh kosong.");
-    
-    const btn = document.getElementById('btn-save-profile');
-    btn.innerText = "Menyimpan...";
-    btn.disabled = true;
-
-    try {
-        let newPhotoUrl = currentUser.photoURL;
         
-        if (selectedProfileFile) {
-            const storageRef = ref(storage, `avatars/${currentUser.uid}`);
-            await uploadBytes(storageRef, selectedProfileFile);
-            newPhotoUrl = await getDownloadURL(storageRef);
-        }
+        const storage = getStorage(app);
 
-        await updateProfile(currentUser, { displayName: newName, photoURL: newPhotoUrl });
-        await setDoc(doc(db, "users", currentUser.uid), { name: newName, photoURL: newPhotoUrl }, { merge: true });
-        
-        alert("Profil berhasil diperbarui!");
-    } catch (error) {
-        console.error("Gagal update profil:", error);
-        alert("Terjadi kesalahan saat menyimpan profil.");
-    }
-    
-    btn.innerText = "Simpan Profil";
-    btn.disabled = false;
-});
-        
+        // Logika Ganti Foto & Simpan Profil
+        const photoInput = document.getElementById('profile-photo-input');
+        const avatarPreview = document.getElementById('profile-avatar-preview');
+        let selectedProfileFile = null;
+
+        avatarPreview.addEventListener('click', () => photoInput.click());
+
+        photoInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                selectedProfileFile = e.target.files[0];
+                avatarPreview.src = URL.createObjectURL(selectedProfileFile);
+            }
+        });
+
+        document.getElementById('btn-save-profile').addEventListener('click', async () => {
+            const newName = document.getElementById('profile-name-input').value.trim();
+            if (!newName) return alert("Nama tidak boleh kosong.");
+            
+            const btn = document.getElementById('btn-save-profile');
+            btn.innerText = "Menyimpan...";
+            btn.disabled = true;
+
+            try {
+                let newPhotoUrl = currentUser.photoURL;
+                
+                if (selectedProfileFile) {
+                    const storageRef = ref(storage, `avatars/${currentUser.uid}`);
+                    await uploadBytes(storageRef, selectedProfileFile);
+                    newPhotoUrl = await getDownloadURL(storageRef);
+                }
+
+                await updateProfile(currentUser, { displayName: newName, photoURL: newPhotoUrl });
+                await setDoc(doc(db, "users", currentUser.uid), { name: newName, photoURL: newPhotoUrl }, { merge: true });
+                
+                alert("Profil berhasil diperbarui!");
+            } catch (error) {
+                console.error("Gagal update profil:", error);
+                alert("Terjadi kesalahan saat menyimpan profil.");
+            }
+            
+            btn.innerText = "Simpan Profil";
+            btn.disabled = false;
+        });
     </script>
 </body>
 </html>
