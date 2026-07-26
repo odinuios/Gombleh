@@ -8,8 +8,19 @@
     <meta name="theme-color" content="#00a884">
     <style>
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: 'Segoe UI', Helvetica, sans-serif; background-color: #d1d7db; display: flex; height: 100vh; height: 100dvh; justify-content: center; align-items: center; overflow: hidden; }
+        body { margin: 0; font-family: 'Segoe UI', Helvetica, sans-serif; background-color: #d1d7db; display: flex; height: 100vh; height: 100dvh; justify-content: center; align-items: center; overflow: hidden; position: relative;}
         
+        /* Banner In-App (Foreground Notifications) */
+        .banner-container { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; pointer-events: none;}
+        .in-app-banner { background: #fff; border-left: 5px solid #00a884; box-shadow: 0 4px 15px rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 12px; pointer-events: auto; animation: slideDown 0.3s ease forwards, fadeOut 0.5s ease 4s forwards; cursor: pointer;}
+        .in-app-banner img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .in-app-banner .b-info { flex: 1; }
+        .in-app-banner h4 { margin: 0 0 3px 0; font-size: 14px; color: #111b21; }
+        .in-app-banner p { margin: 0; font-size: 12px; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;}
+        
+        @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
+
         /* Layar Login */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: #f0f2f5; display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .login-box { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 300px; }
@@ -21,11 +32,9 @@
         /* Container Utama */
         .app-container { display: flex; width: 100%; max-width: 1400px; height: 100vh; height: 100dvh; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2); margin: 0 auto; position: relative; overflow: hidden; }
         
-        /* Sidebar (Kiri / Navigasi) */
+        /* Sidebar & Header */
         .sidebar { flex: 0 0 30%; min-width: 320px; border-right: 1px solid #d1d7db; display: flex; flex-direction: column; background: #fff; position: relative; height: 100%; overflow: hidden; }
         .header { height: 60px; background-color: #f0f2f5; display: flex; align-items: center; padding: 0 15px; font-weight: 600; color: #41525d; border-bottom: 1px solid #ddd; flex-shrink: 0; }
-        
-        /* Area Konten Tab */
         .tab-content-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; height: calc(100% - 60px); }
         .tab-pane { display: none; flex-direction: column; height: 100%; }
         .tab-pane.active { display: flex; }
@@ -35,8 +44,7 @@
         .menu-row { display: flex; gap: 5px; }
         .menu-row input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; font-size: 14px; }
         .menu-row button { padding: 10px 15px; background: #00a884; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
-        .menu-row button:hover { background: #008f6f; }
-
+        
         /* List Items */
         .list-container { flex: 1; overflow-y: auto; }
         .list-item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f2f2f2; cursor: pointer; position: relative;}
@@ -45,7 +53,6 @@
         .info { flex: 1; overflow: hidden; }
         .name { font-weight: 500; font-size: 16px; margin: 0 0 3px 0; color: #111b21; }
         .preview { font-size: 13px; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
-        
         .request-actions { display: flex; gap: 5px; }
         .btn-acc { background: #00a884; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
         .btn-rej { background: #d9534f; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
@@ -55,50 +62,49 @@
         .tab-btn { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: none; border: none; cursor: pointer; color: #54656f; font-size: 12px; font-weight: 500; gap: 4px; transition: 0.2s; position: relative;}
         .tab-btn:hover { background: #e9edef; }
         .tab-btn.active { color: #00a884; font-weight: bold; }
-        .tab-btn .icon { font-size: 20px; }
         .badge { position: absolute; top: 5px; right: 15px; background: #d9534f; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold; display: none; }
 
-        /* Profil Tab Khusus */
+        /* Profil */
         .profile-container { padding: 20px; text-align: center; }
         .profile-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #00a884; margin-bottom: 15px; cursor: pointer; }
         .profile-btn { background: #00a884; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
         .logout-btn { background: #d9534f; margin-top: 20px; }
 
-        /* Ruang Obrolan (Kanan) */
+        /* Ruang Obrolan */
         .chat-main { flex: 1 1 auto; display: flex; flex-direction: column; background-color: #f0f2f5; width: 100%; height: 100%; overflow: hidden; position: relative;}
-        
         #chat-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; text-align: center; color: #667781; background-color: #f0f2f5; }
         #chat-empty-state h1 { font-weight: 300; margin-bottom: 10px; color: #41525d; }
-
         #chat-active-state { display: none; flex-direction: column; height: 100%; width: 100%; background-color: #efeae2; }
         .header-actions { margin-left: auto; display: flex; gap: 5px; }
 
         .chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: contain; }
-        
         .message { max-width: 65%; padding: 8px 12px; border-radius: 7px; font-size: 14px; position: relative; line-height: 1.4; box-shadow: 0 1px 0.5px rgba(11,20,26,.13); word-wrap: break-word; }
         .message.received { background-color: #fff; align-self: flex-start; border-top-left-radius: 0; }
         .message.sent { background-color: #d9fdd3; align-self: flex-end; border-top-right-radius: 0; }
         .msg-sender { font-size: 11px; font-weight: bold; color: #00766c; margin-bottom: 2px; }
-        
-        /* Modifikasi UI waktu agar Status terbaca jelas */
         .msg-time-container { display: flex; align-items: center; justify-content: flex-end; margin: 4px 0 -4px 10px; float: right; gap: 4px; }
         .msg-time { font-size: 11px; color: #667781; }
         .msg-status { font-size: 11px; font-weight: bold; }
-        
         .message img { max-width: 100%; border-radius: 5px; cursor: pointer; margin-bottom: 5px; display: block; }
         
         .chat-input-area { background-color: #f0f2f5; display: flex; align-items: center; padding: 10px 15px; gap: 10px; flex-shrink: 0; }
         .chat-input-area input[type="text"] { flex: 1; border: none; padding: 12px 15px; border-radius: 8px; outline: none; font-size: 15px; }
         .action-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #54656f; padding: 5px; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
-        .action-btn:hover { background: #d9d9d9; }
         .btn-send { background-color: #00a884; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-        /* Modals */
-        .call-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; }
-        .call-avatar { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 20px; object-fit: cover; border: 3px solid #00a884; }
+        /* Modal Generik */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: center; align-items: center; }
+        .modal-box { background: white; width: 90%; max-width: 350px; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; max-height: 80vh; }
+        .modal-header { padding: 15px; background: #00a884; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .modal-close { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+        .modal-content { flex: 1; overflow-y: auto; padding: 10px 0; }
+
+        /* Modal Panggilan */
+        .call-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.9); z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; }
+        .call-avatar { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 20px; object-fit: cover; border: 3px solid #00a884; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 168, 132, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(0, 168, 132, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 168, 132, 0); } }
         .call-modal h2 { margin: 0 0 10px 0; font-size: 24px; font-weight: 500; }
-        .call-modal p { color: #ccc; margin-bottom: 30px; }
-        .call-actions { display: flex; gap: 30px; }
+        .call-actions { display: flex; gap: 30px; margin-top: 20px;}
         .btn-call { border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 25px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; }
         .btn-call:hover { transform: scale(1.1); }
         .btn-answer { background-color: #00a884; }
@@ -114,6 +120,26 @@
     </style>
 </head>
 <body>
+    
+    <!-- Audio Elements (Notifikasi & Ringtone) -->
+    <audio id="audio-ringtone" loop src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+    <audio id="audio-notif" src="https://assets.mixkit.co/active_storage/sfx/2854/2854-preview.mp3" preload="auto"></audio>
+
+    <!-- Banner In-App Container -->
+    <div id="banner-container" class="banner-container"></div>
+
+    <!-- Modal Tambah Anggota Grup (Dari Daftar Kontak) -->
+    <div id="group-add-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>Pilih Kontak</span>
+                <button class="modal-close" id="btn-close-group-modal">✖</button>
+            </div>
+            <div class="modal-content" id="group-add-contact-list">
+                <!-- List kontak di-inject di sini via JS -->
+            </div>
+        </div>
+    </div>
 
     <!-- Layar Login -->
     <div id="login-screen">
@@ -131,19 +157,13 @@
     <div id="app-container" class="app-container hidden">
         <div class="sidebar">
             <div class="tab-content-area">
-                <!-- TAB 1: CHATS -->
                 <div id="tab-chats" class="tab-pane active">
-                    <div class="header">
-                        <span style="font-size: 20px; font-weight: bold;">Chats</span>
-                    </div>
+                    <div class="header"><span style="font-size: 20px; font-weight: bold;">Chats</span></div>
                     <div class="list-container" id="chat-list-container"></div>
                 </div>
 
-                <!-- TAB 2: KONTAK & GRUP -->
                 <div id="tab-contacts" class="tab-pane">
-                    <div class="header">
-                        <span style="font-size: 20px; font-weight: bold;">Kontak & Grup</span>
-                    </div>
+                    <div class="header"><span style="font-size: 20px; font-weight: bold;">Kontak & Grup</span></div>
                     <div class="menu-box">
                         <div class="menu-row">
                             <input type="email" id="add-email-input" placeholder="Email teman..." autocomplete="off">
@@ -157,21 +177,15 @@
                     <div class="list-container" id="contact-list-container"></div>
                 </div>
 
-                <!-- TAB 3: NOTIFIKASI / PERMINTAAN PERTEMANAN -->
                 <div id="tab-notifications" class="tab-pane">
-                    <div class="header">
-                        <span style="font-size: 20px; font-weight: bold;">Notifikasi</span>
-                    </div>
+                    <div class="header"><span style="font-size: 20px; font-weight: bold;">Notifikasi</span></div>
                     <div class="list-container" id="notification-list-container">
                         <p style="text-align:center; color:#888; font-size:14px; margin-top:20px;" id="empty-notif">Tidak ada notifikasi baru.</p>
                     </div>
                 </div>
 
-                <!-- TAB 4: PROFIL -->
                 <div id="tab-profile" class="tab-pane">
-                    <div class="header">
-                        <span style="font-size: 20px; font-weight: bold;">Profil Anda</span>
-                    </div>
+                    <div class="header"><span style="font-size: 20px; font-weight: bold;">Profil Anda</span></div>
                     <div class="profile-container">
                         <input type="file" id="profile-photo-input" style="display: none;" accept="image/*">
                         <img src="https://via.placeholder.com/120" id="profile-avatar-preview" class="profile-avatar" title="Klik ganti foto">
@@ -185,31 +199,19 @@
                 </div>
             </div>
 
-            <!-- Tab Navigation Bar (Bawah) -->
             <div class="tab-nav">
-                <button class="tab-btn active" data-tab="tab-chats">
-                    <span class="icon">💬</span><span>Chats</span>
-                </button>
-                <button class="tab-btn" data-tab="tab-contacts">
-                    <span class="icon">👥</span><span>Kontak</span>
-                </button>
-                <button class="tab-btn" data-tab="tab-notifications">
-                    <span class="icon">🔔</span><span>Notif</span>
-                    <div class="badge" id="notif-badge">0</div>
-                </button>
-                <button class="tab-btn" data-tab="tab-profile">
-                    <span class="icon">⚙️</span><span>Profil</span>
-                </button>
+                <button class="tab-btn active" data-tab="tab-chats"><span class="icon">💬</span><span>Chats</span></button>
+                <button class="tab-btn" data-tab="tab-contacts"><span class="icon">👥</span><span>Kontak</span></button>
+                <button class="tab-btn" data-tab="tab-notifications"><span class="icon">🔔</span><span>Notif</span><div class="badge" id="notif-badge">0</div></button>
+                <button class="tab-btn" data-tab="tab-profile"><span class="icon">⚙️</span><span>Profil</span></button>
             </div>
         </div>
 
-        <!-- Ruang Obrolan (Kanan) -->
         <div class="chat-main" id="chat-main-area">
             <div id="chat-empty-state">
                 <span style="font-size: 80px; color:#d1d7db; margin-bottom: 20px;">💬</span>
                 <h1>Mau gibah ama sapa nih?</h1>
                 <p>Kirim pesan dan lakukan panggilan.</p>
-                <p>Pilih kontak atau grup untuk memulai.</p>
             </div>
 
             <div id="chat-active-state">
@@ -217,7 +219,7 @@
                     <button id="btn-back-mobile">←</button>
                     <div id="chat-main-header" style="display: flex; align-items: center; gap: 10px;"></div>
                     <div class="header-actions" id="chat-header-actions" style="display: flex; gap: 5px;">
-                        <button class="action-btn" id="btn-add-group-member" title="Tambah Anggota" style="display:none;">➕</button>
+                        <button class="action-btn" id="btn-open-group-modal" title="Tambah Anggota" style="display:none;">➕</button>
                         <button class="action-btn" id="btn-start-voice-call" title="Panggilan Suara">📞</button>
                         <button class="action-btn" id="btn-start-video-call" title="Video Call">📹</button>
                     </div>
@@ -237,8 +239,9 @@
 
     <!-- Modals Panggilan Masuk -->
     <div id="incoming-call-modal" class="call-modal">
+        <img src="https://via.placeholder.com/100" id="incoming-caller-avatar" class="call-avatar">
         <h2 id="incoming-caller-name">Seseorang</h2>
-        <p id="incoming-call-type">Memanggil...</p>
+        <p id="incoming-call-type" style="color: #ccc;">Memanggil Video...</p>
         <div class="call-actions">
             <button class="btn-call btn-reject" id="btn-reject-call" title="Tolak">✖</button>
             <button class="btn-call btn-answer" id="btn-answer-call" title="Jawab">📞</button>
@@ -252,7 +255,7 @@
         <audio id="remote-audio" autoplay></audio>
         
         <div style="z-index: 3; position: relative; margin-top: auto; margin-bottom: 30px; display: flex; flex-direction: column; align-items: center; width: 100%;">
-            <img src="https://via.placeholder.com/100" id="active-call-avatar" class="call-avatar" style="display:none;">
+            <img src="https://via.placeholder.com/100" id="active-call-avatar" class="call-avatar" style="display:none; animation:none;">
             <h2 id="active-call-name" style="margin-bottom: 5px;">Nama</h2>
             <p id="active-call-status" style="margin-bottom: 15px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px;">Memanggil...</p>
             <div class="call-actions">
@@ -264,7 +267,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, where, getDocs, getDoc, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, where, getDocs, getDoc, deleteDoc, arrayUnion, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
 
         const firebaseConfig = {
@@ -290,12 +293,56 @@
         let activeTargetType = 'private'; 
         let unsubscribeChat = null;
         let currentCallMode = 'voice';
+        
+        let processedMessages = new Set(); // Mencegah notif duplikat
+
+        // AUDIO
+        const audioRingtone = document.getElementById('audio-ringtone');
+        const audioNotif = document.getElementById('audio-notif');
+
+        function playNotif() {
+            audioNotif.currentTime = 0;
+            audioNotif.play().catch(e => console.log("Auto-play prevented by browser."));
+        }
+        function playRingtone() {
+            audioRingtone.currentTime = 0;
+            audioRingtone.play().catch(e => console.log("Auto-play prevented."));
+        }
+        function stopRingtone() {
+            audioRingtone.pause();
+            audioRingtone.currentTime = 0;
+        }
+
+        // FUNGSI BANNER IN-APP & NATIVE
+        const bannerContainer = document.getElementById('banner-container');
+        function showNotification(title, body, photo = 'https://via.placeholder.com/40') {
+            playNotif();
+            
+            // Native Browser Notification (Jika standby/minimize)
+            if (Notification.permission === 'granted' && document.hidden) {
+                new Notification(title, { body: body, icon: photo });
+            }
+
+            // In-App Banner (Selalu muncul saat aplikasi terbuka)
+            const banner = document.createElement('div');
+            banner.className = 'in-app-banner';
+            banner.innerHTML = `
+                <img src="${photo}">
+                <div class="b-info">
+                    <h4>${title}</h4>
+                    <p>${body}</p>
+                </div>
+            `;
+            banner.addEventListener('click', () => banner.remove());
+            bannerContainer.appendChild(banner);
+            
+            // Hapus dari DOM setelah animasi selesai
+            setTimeout(() => { if(bannerContainer.contains(banner)) banner.remove(); }, 4500);
+        }
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./firebase-messaging-sw.js')
-                .then((registration) => { console.log('Service Worker Registered'); })
-                .catch((err) => console.log('Service Worker Failed: ', err));
+                navigator.serviceWorker.register('./firebase-messaging-sw.js').catch(err => console.log('SW Failed: ', err));
             });
         }
 
@@ -306,14 +353,15 @@
         const notificationListContainer = document.getElementById('notification-list-container');
         const chatHistory = document.querySelector('.chat-history');
         const chatMainHeader = document.getElementById('chat-main-header');
-        const chatHeaderActions = document.getElementById('chat-header-actions');
         const chatEmptyState = document.getElementById('chat-empty-state');
         const chatActiveState = document.getElementById('chat-active-state');
         const inputMessage = document.getElementById('message-input');
         const chatMainArea = document.getElementById('chat-main-area');
         const emptyNotif = document.getElementById('empty-notif');
         const notifBadge = document.getElementById('notif-badge');
-        const btnAddGroupMember = document.getElementById('btn-add-group-member');
+        const btnOpenGroupModal = document.getElementById('btn-open-group-modal');
+        const groupAddModal = document.getElementById('group-add-modal');
+        const groupAddContactList = document.getElementById('group-add-contact-list');
 
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabPanes = document.querySelectorAll('.tab-pane');
@@ -329,17 +377,15 @@
 
         document.getElementById('btn-back-mobile').addEventListener('click', () => {
             chatMainArea.classList.remove('active-mobile');
+            activeTargetId = null; // Lepas target agar global listener mendeteksi notifikasi baru
         });
 
         const btnLogin = document.getElementById('btn-login');
         if(btnLogin) {
             btnLogin.addEventListener('click', () => {
-                setPersistence(auth, browserLocalPersistence)
-                .then(() => signInWithPopup(auth, provider))
-                .catch(error => alert("Gagal login: " + error.message));
+                setPersistence(auth, browserLocalPersistence).then(() => signInWithPopup(auth, provider)).catch(error => alert("Gagal login: " + error.message));
             });
         }
-        
         document.getElementById('btn-logout').addEventListener('click', () => { signOut(auth).then(() => { location.reload(); }); });
 
         onAuthStateChanged(auth, async (user) => {
@@ -351,9 +397,7 @@
                 document.getElementById('profile-avatar-preview').src = user.photoURL || 'https://via.placeholder.com/120';
                 document.getElementById('profile-name-input').value = user.displayName || '';
                 
-                await setDoc(doc(db, "users", user.uid), { 
-                    uid: user.uid, name: user.displayName, email: user.email, photoURL: user.photoURL 
-                }, { merge: true });
+                await setDoc(doc(db, "users", user.uid), { uid: user.uid, name: user.displayName, email: user.email, photoURL: user.photoURL }, { merge: true });
                 
                 requestNotificationPermission();
                 loadSidebarItems();
@@ -405,23 +449,24 @@
                 document.querySelectorAll('.req-item').forEach(el => el.remove());
                 
                 if (snapshot.empty) {
-                    emptyNotif.style.display = 'block';
-                    notifBadge.style.display = 'none';
+                    emptyNotif.style.display = 'block'; notifBadge.style.display = 'none';
                 } else {
-                    emptyNotif.style.display = 'none';
-                    notifBadge.style.display = 'block';
-                    notifBadge.innerText = snapshot.size;
+                    emptyNotif.style.display = 'none'; notifBadge.style.display = 'block'; notifBadge.innerText = snapshot.size;
                     
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added') {
+                            const reqData = change.doc.data();
+                            showNotification("Permintaan Pertemanan", `${reqData.name} ingin terhubung dengan Anda.`, reqData.photoURL);
+                        }
+                    });
+
                     snapshot.forEach((docSnap) => {
                         const reqData = docSnap.data();
                         const div = document.createElement('div');
                         div.className = 'list-item req-item';
                         div.innerHTML = `
                             <img src="${reqData.photoURL || 'https://via.placeholder.com/45'}" class="avatar">
-                            <div class="info">
-                                <p class="name">${reqData.name}</p>
-                                <p class="preview">Minta ditambahkan</p>
-                            </div>
+                            <div class="info"><p class="name">${reqData.name}</p><p class="preview">Minta ditambahkan</p></div>
                             <div class="request-actions">
                                 <button class="btn-acc" data-uid="${reqData.uid}">Terima</button>
                                 <button class="btn-rej" data-uid="${reqData.uid}">Tolak</button>
@@ -440,13 +485,10 @@
                 await setDoc(doc(db, "users", currentUser.uid, "contacts", reqData.uid), { uid: reqData.uid });
                 await setDoc(doc(db, "users", reqData.uid, "contacts", currentUser.uid), { uid: currentUser.uid });
                 await deleteDoc(doc(db, "users", currentUser.uid, "friend_requests", reqData.uid));
-                alert("Kontak berhasil ditambahkan!");
             } catch(e) { console.log(e); }
         }
 
-        async function rejectRequest(uid) {
-            await deleteDoc(doc(db, "users", currentUser.uid, "friend_requests", uid));
-        }
+        async function rejectRequest(uid) { await deleteDoc(doc(db, "users", currentUser.uid, "friend_requests", uid)); }
 
         // ================= MANAJEMEN GRUP =================
         document.getElementById('btn-create-group').addEventListener('click', async () => {
@@ -454,31 +496,55 @@
             if (!groupName) return alert("Masukkan nama grup.");
             try {
                 const groupRef = doc(collection(db, "groups"));
-                await setDoc(groupRef, {
-                    groupId: groupRef.id, groupName: groupName, createdBy: currentUser.uid, members: [currentUser.uid], createdAt: serverTimestamp()
-                });
-                alert("Grup berhasil dibuat!");
+                await setDoc(groupRef, { groupId: groupRef.id, groupName: groupName, createdBy: currentUser.uid, members: [currentUser.uid], createdAt: serverTimestamp() });
                 document.getElementById('group-name-input').value = '';
             } catch (error) { alert("Gagal membuat grup."); }
         });
 
-        btnAddGroupMember.addEventListener('click', async () => {
+        // Modal Kontak untuk tambah grup
+        btnOpenGroupModal.addEventListener('click', async () => {
             if (activeTargetType !== 'group' || !activeTargetId) return;
-            const targetEmail = prompt("Masukkan Email teman untuk dimasukkan ke grup ini:");
-            if (!targetEmail) return;
+            groupAddModal.style.display = 'flex';
+            groupAddContactList.innerHTML = '<p style="text-align:center;color:#667;">Memuat kontak...</p>';
+            
+            // Ambil data grup saat ini untuk cek siapa yang sudah ada di dalam
+            const groupDoc = await getDoc(doc(db, "groups", activeTargetId));
+            const existingMembers = groupDoc.exists() ? groupDoc.data().members : [];
 
-            try {
-                const q = query(collection(db, "users"), where("email", "==", targetEmail.toLowerCase()));
-                const snapshot = await getDocs(q);
-                if (snapshot.empty) return alert("Email tidak ditemukan.");
-                
-                let targetUid; snapshot.forEach(d => targetUid = d.data().uid);
-                await updateDoc(doc(db, "groups", activeTargetId), { members: arrayUnion(targetUid) });
-                alert("Berhasil menambahkan anggota ke grup!");
-            } catch(e) { alert("Gagal menambahkan anggota."); console.error(e); }
+            // Tampilkan daftar kontak yang BUKAN anggota grup
+            const contactsRef = collection(db, "users", currentUser.uid, "contacts");
+            const snap = await getDocs(contactsRef);
+            groupAddContactList.innerHTML = '';
+            
+            if(snap.empty) { groupAddContactList.innerHTML = '<p style="text-align:center;">Tidak ada kontak tersedia.</p>'; return; }
+
+            snap.forEach(async (dSnap) => {
+                if(!existingMembers.includes(dSnap.id)) {
+                    const userDoc = await getDoc(doc(db, "users", dSnap.id));
+                    if(userDoc.exists()) {
+                        const uData = userDoc.data();
+                        const div = document.createElement('div');
+                        div.className = 'list-item';
+                        div.style.padding = "10px";
+                        div.innerHTML = `<img src="${uData.photoURL || 'https://via.placeholder.com/35'}" class="avatar" style="width:35px;height:35px;"><div class="info"><p class="name" style="font-size:14px;">${uData.name}</p></div>`;
+                        div.addEventListener('click', async () => {
+                            const conf = confirm(`Tambahkan ${uData.name} ke grup?`);
+                            if(conf) {
+                                await updateDoc(doc(db, "groups", activeTargetId), { members: arrayUnion(uData.uid) });
+                                showNotification("Sistem", `${uData.name} ditambahkan ke grup.`);
+                                groupAddModal.style.display = 'none';
+                            }
+                        });
+                        groupAddContactList.appendChild(div);
+                    }
+                }
+            });
+            if(groupAddContactList.innerHTML === '') groupAddContactList.innerHTML = '<p style="text-align:center;">Semua kontak Anda sudah ada di grup ini.</p>';
         });
 
-        // ================= LOAD SIDEBAR & CHAT =================
+        document.getElementById('btn-close-group-modal').addEventListener('click', () => groupAddModal.style.display = 'none');
+
+        // ================= LOAD SIDEBAR, CHAT & GLOBAL LISTENER =================
         function loadSidebarItems() {
             chatListContainer.innerHTML = '';
             contactListContainer.innerHTML = '';
@@ -490,16 +556,17 @@
                     const contactData = docSnap.data();
                     onSnapshot(doc(db, "users", contactData.uid), (userDoc) => {
                         const latestData = userDoc.exists() ? userDoc.data() : contactData;
+                        const chatId = currentUser.uid < latestData.uid ? `${currentUser.uid}_${latestData.uid}` : `${latestData.uid}_${currentUser.uid}`;
                         
-                        const exChat = document.getElementById(`chat-item-${contactData.uid}`);
-                        if (exChat) exChat.remove();
-                        const exCont = document.getElementById(`contact-item-${contactData.uid}`);
-                        if (exCont) exCont.remove();
+                        // Buat Global Listener untuk notifikasi chat ini (jika bukan chat aktif)
+                        setupChatNotificationListener(chatId, latestData.name, latestData.photoURL, 'private');
+
+                        const exChat = document.getElementById(`chat-item-${contactData.uid}`); if (exChat) exChat.remove();
+                        const exCont = document.getElementById(`contact-item-${contactData.uid}`); if (exCont) exCont.remove();
 
                         const makeItem = (idPrefix) => {
                             const d = document.createElement('div');
-                            d.className = 'list-item item-private';
-                            d.id = `${idPrefix}-${contactData.uid}`;
+                            d.className = 'list-item item-private'; d.id = `${idPrefix}-${contactData.uid}`;
                             d.innerHTML = `<img src="${latestData.photoURL || 'https://via.placeholder.com/45'}" class="avatar"><div class="info"><p class="name">${latestData.name || 'User'}</p><p class="preview">${latestData.email || ''}</p></div>`;
                             d.addEventListener('click', () => openChat(latestData.uid, latestData.name, latestData.photoURL, 'private'));
                             return d;
@@ -516,9 +583,11 @@
                 snapshot.forEach((docSnap) => {
                     const gData = docSnap.data();
                     if (gData.members && gData.members.includes(currentUser.uid)) {
+                        
+                        setupChatNotificationListener(gData.groupId, gData.groupName, 'https://via.placeholder.com/45', 'group');
+
                         const makeGroup = () => {
-                            const d = document.createElement('div');
-                            d.className = 'list-item item-group';
+                            const d = document.createElement('div'); d.className = 'list-item item-group';
                             d.innerHTML = `<div class="avatar" style="background:#00a884; color:white;">👥</div><div class="info"><p class="name">${gData.groupName}</p><p class="preview">${gData.members.length} Anggota</p></div>`;
                             d.addEventListener('click', () => openChat(gData.groupId, gData.groupName, null, 'group'));
                             return d;
@@ -530,19 +599,37 @@
             });
         }
 
-        function openChat(id, name, photo, type) {
-            activeTargetId = id;
-            activeTargetName = name;
-            activeTargetType = type;
-            
-            chatEmptyState.style.display = 'none';
-            chatActiveState.style.display = 'flex';
+        // Listener Terpisah untuk Memunculkan Notifikasi Pesan Baru
+        function setupChatNotificationListener(chatId, chatName, chatPhoto, type) {
+            const q = query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "desc"), limit(1));
+            onSnapshot(q, (snapshot) => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                        const msgData = change.doc.data();
+                        const targetCompareId = type === 'private' ? chatId.replace(currentUser.uid, '').replace('_', '') : chatId;
+                        
+                        // Tampilkan notifikasi jika: Bukan pesan dari diri sendiri, dan ruang chat tersebut BUKAN yang sedang dibuka
+                        if (msgData.senderId !== currentUser.uid && activeTargetId !== targetCompareId) {
+                            if (!processedMessages.has(change.doc.id)) {
+                                processedMessages.add(change.doc.id);
+                                const txt = msgData.type === 'text' ? msgData.text : (msgData.type === 'image' ? '📷 Mengirim gambar' : '📄 Mengirim dokumen');
+                                const displayTitle = type === 'group' ? `${chatName} (${msgData.senderName})` : chatName;
+                                showNotification(displayTitle, txt, chatPhoto);
+                            }
+                        }
+                    }
+                });
+            });
+        }
 
+        function openChat(id, name, photo, type) {
+            activeTargetId = id; activeTargetName = name; activeTargetType = type;
+            chatEmptyState.style.display = 'none'; chatActiveState.style.display = 'flex';
+            
             let avatarHtml = type === 'group' ? `<div class="avatar" style="background:#00a884; color:white; width:35px; height:35px; font-size:15px; margin:0;">👥</div>` : `<img src="${photo || 'https://via.placeholder.com/45'}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">`;
             chatMainHeader.innerHTML = `${avatarHtml} <span style="font-weight:bold; font-size: 16px;">${name}</span>`;
             
-            btnAddGroupMember.style.display = (type === 'group') ? 'block' : 'none';
-
+            btnOpenGroupModal.style.display = (type === 'group') ? 'block' : 'none';
             if (window.innerWidth <= 768) chatMainArea.classList.add('active-mobile');
             loadChatRoom();
         }
@@ -557,12 +644,9 @@
                 snapshot.forEach((docSnap) => {
                     const data = docSnap.data();
                     const isMine = data.senderId === currentUser.uid;
-                    
-                    // --- FITUR DIBACA (READ RECEIPT) ---
-                    // Jika pesan bukan milik kita (kita penerima), dan statusnya belum 'R', ubah jadi 'R'
-                    if (!isMine && data.status !== 'R') {
-                        updateDoc(docSnap.ref, { status: 'R' });
-                    }
+                    processedMessages.add(docSnap.id); // Tandai sudah diproses agar notif tidak dobel
+
+                    if (!isMine && data.status !== 'R') updateDoc(docSnap.ref, { status: 'R' });
 
                     const div = document.createElement('div');
                     div.className = isMine ? 'message sent' : 'message received';
@@ -573,20 +657,13 @@
                     else if (data.type === 'file') content = `📄 <a href="${data.url}" target="_blank">Unduh File (${data.fileName})</a>`;
                     
                     let senderLabel = (activeTargetType === 'group' && !isMine) ? `<div class="msg-sender">${data.senderName}</div>` : '';
-                    
-                    // --- UI STATUS PENGIRIMAN (D / R) ---
                     let statusHtml = '';
                     if (isMine) {
-                        const statusColor = data.status === 'R' ? '#53bdeb' : '#888'; // Biru terang untuk R, Abu-abu untuk D
-                        const statusText = data.status === 'R' ? 'R' : 'D';
-                        statusHtml = `<span class="msg-status" style="color: ${statusColor};">${statusText}</span>`;
+                        const statusColor = data.status === 'R' ? '#53bdeb' : '#888';
+                        statusHtml = `<span class="msg-status" style="color: ${statusColor};">${data.status === 'R' ? 'R' : 'D'}</span>`;
                     }
 
-                    div.innerHTML = `${senderLabel}${content} 
-                                     <div class="msg-time-container">
-                                        <span class="msg-time">${time}</span>
-                                        ${statusHtml}
-                                     </div>`;
+                    div.innerHTML = `${senderLabel}${content} <div class="msg-time-container"><span class="msg-time">${time}</span>${statusHtml}</div>`;
                     chatHistory.appendChild(div);
                 });
                 chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -597,54 +674,33 @@
             const text = inputMessage.value.trim();
             if (text && activeTargetId) {
                 const chatId = activeTargetType === 'private' ? (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`) : activeTargetId;
-                
-                // Tambahkan field `status: 'D'` sebagai penanda Default terkirim
-                addDoc(collection(db, "chats", chatId, "messages"), { 
-                    type: 'text', text: text, senderId: currentUser.uid, senderName: currentUser.displayName, 
-                    timestamp: serverTimestamp(), status: 'D' 
-                });
-                
-                inputMessage.value = '';
-                inputMessage.focus();
+                addDoc(collection(db, "chats", chatId, "messages"), { type: 'text', text: text, senderId: currentUser.uid, senderName: currentUser.displayName, timestamp: serverTimestamp(), status: 'D' });
+                inputMessage.value = ''; inputMessage.focus();
             }
         });
-        
         inputMessage.addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btn-send').click(); });
 
-        const btnAttach = document.getElementById('btn-attach');
-        const fileInput = document.getElementById('file-input');
+        const btnAttach = document.getElementById('btn-attach'); const fileInput = document.getElementById('file-input');
         btnAttach.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file || !activeTargetId) return;
+            const file = e.target.files[0]; if (!file || !activeTargetId) return;
             btnAttach.style.opacity = '0.5';
             try {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_PRESET);
+                const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', CLOUDINARY_PRESET);
                 const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
                 const data = await response.json();
-                
                 if (data.secure_url) {
                     const chatId = activeTargetType === 'private' ? (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`) : activeTargetId;
                     const type = file.type.startsWith('image/') ? 'image' : 'file';
-                    
-                    await addDoc(collection(db, "chats", chatId, "messages"), { 
-                        type: type, url: data.secure_url, fileName: file.name, text: '', senderId: currentUser.uid, 
-                        senderName: currentUser.displayName, timestamp: serverTimestamp(), status: 'D'
-                    });
+                    await addDoc(collection(db, "chats", chatId, "messages"), { type: type, url: data.secure_url, fileName: file.name, text: '', senderId: currentUser.uid, senderName: currentUser.displayName, timestamp: serverTimestamp(), status: 'D' });
                 }
             } catch (error) { alert("Gagal mengunggah file."); }
             btnAttach.style.opacity = '1'; fileInput.value = '';
         });
 
-        // ================= WEBRTC PANGGILAN (VOICE / VIDEO) =================
+        // ================= WEBRTC PANGGILAN =================
         const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }] };
-        let pc = null;
-        let localStream = null;
-        let currentCallDocId = null;
-        let callSnapshotUnsub = null;
-
+        let pc = null; let localStream = null; let currentCallDocId = null; let callSnapshotUnsub = null;
         const modalIncoming = document.getElementById('incoming-call-modal');
         const modalActive = document.getElementById('active-call-modal');
         const remoteVideo = document.getElementById('remote-video');
@@ -652,17 +708,12 @@
         const remoteAudio = document.getElementById('remote-audio');
 
         async function startCall(mode) {
-            currentCallMode = mode;
-            modalActive.style.display = 'flex';
+            currentCallMode = mode; modalActive.style.display = 'flex';
             document.getElementById('active-call-name').innerText = activeTargetName;
             document.getElementById('active-call-status').innerText = mode === 'video' ? "Memanggil Video..." : "Memanggil Suara...";
             
-            if (mode === 'video') {
-                localVideo.style.display = 'block'; remoteVideo.style.display = 'block'; document.getElementById('active-call-avatar').style.display = 'none';
-            } else {
-                localVideo.style.display = 'none'; remoteVideo.style.display = 'none'; document.getElementById('active-call-avatar').style.display = 'block';
-                document.getElementById('active-call-avatar').src = 'https://via.placeholder.com/100';
-            }
+            if (mode === 'video') { localVideo.style.display = 'block'; remoteVideo.style.display = 'block'; document.getElementById('active-call-avatar').style.display = 'none'; } 
+            else { localVideo.style.display = 'none'; remoteVideo.style.display = 'none'; document.getElementById('active-call-avatar').style.display = 'block'; document.getElementById('active-call-avatar').src = 'https://via.placeholder.com/100'; }
 
             pc = new RTCPeerConnection(servers);
             try {
@@ -672,29 +723,15 @@
                 localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             } catch (e) { alert("Gagal mengakses media!"); stopCallCleanup(); return; }
 
-            pc.ontrack = event => {
-                if (mode === 'video') remoteVideo.srcObject = event.streams[0];
-                else remoteAudio.srcObject = event.streams[0];
-            };
+            pc.ontrack = event => { if (mode === 'video') remoteVideo.srcObject = event.streams[0]; else remoteAudio.srcObject = event.streams[0]; };
 
-            const callDocRef = doc(collection(db, "calls"));
-            currentCallDocId = callDocRef.id;
-            const offerCandidates = collection(callDocRef, 'offerCandidates');
-            const answerCandidates = collection(callDocRef, 'answerCandidates');
-
+            const callDocRef = doc(collection(db, "calls")); currentCallDocId = callDocRef.id;
+            const offerCandidates = collection(callDocRef, 'offerCandidates'); const answerCandidates = collection(callDocRef, 'answerCandidates');
             pc.onicecandidate = event => { if (event.candidate) addDoc(offerCandidates, event.candidate.toJSON()); };
-
-            const offerDescription = await pc.createOffer();
-            await pc.setLocalDescription(offerDescription);
+            const offerDescription = await pc.createOffer(); await pc.setLocalDescription(offerDescription);
 
             const callTarget = activeTargetType === 'group' ? `GROUP_${activeTargetId}` : activeTargetId;
-
-            await setDoc(callDocRef, {
-                callerId: currentUser.uid, callerName: currentUser.displayName,
-                calleeId: callTarget, callMode: mode, type: activeTargetType,
-                offer: { type: offerDescription.type, sdp: offerDescription.sdp },
-                status: 'calling', timestamp: serverTimestamp()
-            });
+            await setDoc(callDocRef, { callerId: currentUser.uid, callerName: currentUser.displayName, calleeId: callTarget, callMode: mode, type: activeTargetType, offer: { type: offerDescription.type, sdp: offerDescription.sdp }, status: 'calling', timestamp: serverTimestamp() });
 
             callSnapshotUnsub = onSnapshot(callDocRef, (docSnap) => {
                 const data = docSnap.data();
@@ -702,10 +739,7 @@
                 if (data?.status === 'answered') document.getElementById('active-call-status').innerText = "Terhubung";
                 if (data?.status === 'ended' || data?.status === 'rejected') stopCallCleanup();
             });
-
-            onSnapshot(answerCandidates, snapshot => {
-                snapshot.docChanges().forEach(change => { if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data())); });
-            });
+            onSnapshot(answerCandidates, snapshot => { snapshot.docChanges().forEach(change => { if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data())); }); });
         }
 
         document.getElementById('btn-start-voice-call').addEventListener('click', () => startCall('voice'));
@@ -714,7 +748,6 @@
         function listenForIncomingCalls() {
             const qPrivate = query(collection(db, "calls"), where("calleeId", "==", currentUser.uid), where("status", "==", "calling"));
             onSnapshot(qPrivate, (snapshot) => { handleIncomingCallDocs(snapshot); });
-
             const qGroup = query(collection(db, "groups"), where("members", "array-contains", currentUser.uid));
             onSnapshot(qGroup, (groupSnap) => {
                 groupSnap.forEach(gDoc => {
@@ -725,31 +758,34 @@
         }
 
         function handleIncomingCallDocs(snapshot) {
-            snapshot.docChanges().forEach((change) => {
+            snapshot.docChanges().forEach(async (change) => {
                 if (change.type === "added") {
                     const callData = change.doc.data();
                     if(callData.callerId === currentUser.uid) return; 
                     currentCallDocId = change.doc.id;
                     currentCallMode = callData.callMode || 'voice';
+                    
                     document.getElementById('incoming-caller-name').innerText = callData.type === 'group' ? `Grup (dari ${callData.callerName})` : callData.callerName;
-                    document.getElementById('incoming-call-type').innerText = currentCallMode === 'video' ? "Panggilan Video Masuk..." : "Panggilan Suara Masuk...";
+                    document.getElementById('incoming-call-type').innerText = currentCallMode === 'video' ? "Memanggil Video..." : "Memanggil Suara...";
+                    
+                    // Ambil foto penelpon untuk UI
+                    const callerDoc = await getDoc(doc(db, "users", callData.callerId));
+                    if(callerDoc.exists() && callerDoc.data().photoURL) { document.getElementById('incoming-caller-avatar').src = callerDoc.data().photoURL; }
+
                     modalIncoming.style.display = 'flex';
+                    playRingtone(); // Mainkan Nada Dering
                 }
             });
         }
 
         document.getElementById('btn-answer-call').addEventListener('click', async () => {
-            modalIncoming.style.display = 'none';
-            modalActive.style.display = 'flex';
+            stopRingtone(); // Matikan nada dering
+            modalIncoming.style.display = 'none'; modalActive.style.display = 'flex';
             document.getElementById('active-call-name').innerText = document.getElementById('incoming-caller-name').innerText;
             document.getElementById('active-call-status').innerText = "Menghubungkan...";
 
-            if (currentCallMode === 'video') {
-                localVideo.style.display = 'block'; remoteVideo.style.display = 'block'; document.getElementById('active-call-avatar').style.display = 'none';
-            } else {
-                localVideo.style.display = 'none'; remoteVideo.style.display = 'none'; document.getElementById('active-call-avatar').style.display = 'block';
-                document.getElementById('active-call-avatar').src = 'https://via.placeholder.com/100';
-            }
+            if (currentCallMode === 'video') { localVideo.style.display = 'block'; remoteVideo.style.display = 'block'; document.getElementById('active-call-avatar').style.display = 'none'; } 
+            else { localVideo.style.display = 'none'; remoteVideo.style.display = 'none'; document.getElementById('active-call-avatar').style.display = 'block'; document.getElementById('active-call-avatar').src = document.getElementById('incoming-caller-avatar').src; }
 
             pc = new RTCPeerConnection(servers);
             try {
@@ -759,37 +795,25 @@
                 localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             } catch (e) { alert("Gagal mengakses media!"); stopCallCleanup(); return; }
 
-            pc.ontrack = event => {
-                if (currentCallMode === 'video') remoteVideo.srcObject = event.streams[0];
-                else remoteAudio.srcObject = event.streams[0];
-            };
+            pc.ontrack = event => { if (currentCallMode === 'video') remoteVideo.srcObject = event.streams[0]; else remoteAudio.srcObject = event.streams[0]; };
 
             const callDocRef = doc(db, "calls", currentCallDocId);
-            const offerCandidates = collection(callDocRef, 'offerCandidates');
-            const answerCandidates = collection(callDocRef, 'answerCandidates');
-
+            const offerCandidates = collection(callDocRef, 'offerCandidates'); const answerCandidates = collection(callDocRef, 'answerCandidates');
             pc.onicecandidate = event => { if (event.candidate) addDoc(answerCandidates, event.candidate.toJSON()); };
 
             const callData = (await getDoc(callDocRef)).data();
             await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
-            const answerDescription = await pc.createAnswer();
-            await pc.setLocalDescription(answerDescription);
+            const answerDescription = await pc.createAnswer(); await pc.setLocalDescription(answerDescription);
 
-            await updateDoc(callDocRef, {
-                answer: { type: answerDescription.type, sdp: answerDescription.sdp }, status: 'answered'
-            });
-
+            await updateDoc(callDocRef, { answer: { type: answerDescription.type, sdp: answerDescription.sdp }, status: 'answered' });
             document.getElementById('active-call-status').innerText = "Terhubung";
 
-            onSnapshot(offerCandidates, snapshot => {
-                snapshot.docChanges().forEach(change => { if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data())); });
-            });
-
+            onSnapshot(offerCandidates, snapshot => { snapshot.docChanges().forEach(change => { if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data())); }); });
             callSnapshotUnsub = onSnapshot(callDocRef, (docSnap) => { if (docSnap.data()?.status === 'ended') stopCallCleanup(); });
         });
 
         document.getElementById('btn-reject-call').addEventListener('click', async () => {
-            modalIncoming.style.display = 'none';
+            stopRingtone(); modalIncoming.style.display = 'none';
             if (currentCallDocId) await updateDoc(doc(db, "calls", currentCallDocId), { status: 'rejected' });
         });
 
@@ -799,14 +823,14 @@
         });
 
         function stopCallCleanup() {
+            stopRingtone();
             if (pc) { pc.close(); pc = null; }
             if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
             if (localVideo.srcObject) localVideo.srcObject = null;
             if (remoteVideo.srcObject) remoteVideo.srcObject = null;
             if (remoteAudio.srcObject) remoteAudio.srcObject = null;
             if (callSnapshotUnsub) { callSnapshotUnsub(); callSnapshotUnsub = null; }
-            modalActive.style.display = 'none';
-            modalIncoming.style.display = 'none';
+            modalActive.style.display = 'none'; modalIncoming.style.display = 'none';
             currentCallDocId = null;
         }
     </script>
