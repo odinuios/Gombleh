@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gibah</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00a884">
     <style>
         body { margin: 0; font-family: 'Segoe UI', Helvetica, sans-serif; background-color: #d1d7db; display: flex; height: 100vh; justify-content: center; align-items: center; }
         
@@ -279,6 +281,29 @@
         let activeTargetName = null;
         let activeTargetType = 'private'; 
         let unsubscribeChat = null;
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('Service Worker berhasil terdaftar!', reg.scope))
+                    .catch(err => console.error('Pendaftaran Service Worker gagal:', err));
+            });
+        }
+        getRedirectResult(auth).then((result) => {
+            if (result) {
+                console.log("Login berhasil via Redirect");
+            }
+        }).catch((error) => {
+            console.error("Error dari Redirect:", error);
+        });
+
+        const btnLogin = document.getElementById('btn-login');
+        if(btnLogin) {
+            btnLogin.addEventListener('click', () => {
+                setPersistence(auth, browserLocalPersistence)
+                .then(() => signInWithRedirect(auth, provider))
+                .catch(error => alert("Gagal memulai login: " + error.message));
+            });
+        }
 
         // Mendapatkan elemen DOM (Pastikan ID di HTML sama)
         const loginScreen = document.getElementById('login-screen');
