@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Chat Pro - Tabs</title>
+    <title>Gibah Yuk</title>
     <style>
         body { margin: 0; font-family: 'Segoe UI', Helvetica, sans-serif; background-color: #d1d7db; display: flex; height: 100vh; justify-content: center; align-items: center; }
         
@@ -33,13 +33,14 @@
         .menu-row button:hover { background: #008f6f; }
 
         /* List Items */
-        .chat-list { flex: 1; overflow-y: auto; }
-        .chat-item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f2f2f2; cursor: pointer; }
-        .chat-item:hover { background-color: #f5f6f6; }
-        .avatar { width: 45px; height: 45px; border-radius: 50%; background-color: #dfe5e7; margin-right: 15px; flex-shrink: 0; object-fit: cover; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #555; }
-        .chat-info { flex: 1; overflow: hidden; }
-        .chat-name { font-weight: 500; font-size: 16px; margin: 0 0 3px 0; color: #111b21; }
-        .chat-preview { font-size: 13px; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
+        .list-container { flex: 1; overflow-y: auto; }
+        .list-item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f2f2f2; cursor: pointer; }
+        .list-item:hover { background-color: #f5f6f6; }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; background-color: #dfe5e7; margin-right: 15px; flex-shrink: 0; object-fit: cover; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #555; font-size: 20px;}
+        .info { flex: 1; overflow: hidden; }
+        .name { font-weight: 500; font-size: 16px; margin: 0 0 3px 0; color: #111b21; }
+        .preview { font-size: 13px; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
+        .call-icon-log { color: #00a884; margin-right: 5px; font-weight: bold;}
 
         /* Navigasi Bawah (Tabs) */
         .tab-nav { display: flex; background: #f0f2f5; border-top: 1px solid #ddd; height: 60px; flex-shrink: 0; }
@@ -54,11 +55,17 @@
         .profile-btn { background: #00a884; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
         .logout-btn { background: #d9534f; margin-top: 20px; }
 
-        /* Panggilan Placeholder */
-        .calls-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #667781; text-align: center; padding: 20px; }
-
         /* Ruang Obrolan (Kanan) */
-        .chat-main { flex: 1 1 auto; display: flex; flex-direction: column; background-color: #efeae2; width: 100%; overflow: hidden; }
+        .chat-main { flex: 1 1 auto; display: flex; flex-direction: column; background-color: #f0f2f5; width: 100%; overflow: hidden; position: relative;}
+        
+        /* Layar Kosong (Blank State) */
+        #chat-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; text-align: center; color: #667781; background-color: #f0f2f5; }
+        #chat-empty-state h1 { font-weight: 300; margin-bottom: 10px; color: #41525d; }
+
+        /* Layar Chat Aktif */
+        #chat-active-state { display: none; flex-direction: column; height: 100%; width: 100%; background-color: #efeae2; }
+        .header-actions { margin-left: auto; display: none; } /* Hanya muncul untuk chat pribadi */
+
         .chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: contain; }
         
         /* Gelembung Pesan */
@@ -68,27 +75,30 @@
         .msg-sender { font-size: 11px; font-weight: bold; color: #00766c; margin-bottom: 2px; }
         .msg-time { font-size: 11px; color: #667781; float: right; margin: 6px 0 -4px 10px; }
         
-        /* Media dalam Pesan */
-        .message img { max-width: 100%; border-radius: 5px; cursor: pointer; margin-bottom: 5px; display: block; }
-        .message audio { max-width: 200px; height: 35px; outline: none; margin-bottom: 5px; }
-        .message a { color: #027eb5; text-decoration: none; font-weight: bold; }
-
         /* Area Input */
         .chat-input-area { background-color: #f0f2f5; display: flex; align-items: center; padding: 10px 15px; gap: 10px; }
         .chat-input-area input[type="text"] { flex: 1; border: none; padding: 12px 15px; border-radius: 8px; outline: none; font-size: 15px; }
-        
         .action-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #54656f; padding: 5px; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
         .action-btn:hover { background: #d9d9d9; }
-        .recording { color: red !important; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.3; } }
         .btn-send { background-color: #00a884; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        /* Modal Panggilan Suara */
+        .call-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: rgba(0,0,0,0.85); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; backdrop-filter: blur(5px); }
+        .call-avatar { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 20px; object-fit: cover; border: 3px solid #00a884; }
+        .call-modal h2 { margin: 0 0 10px 0; font-size: 24px; font-weight: 500; }
+        .call-modal p { color: #ccc; margin-bottom: 30px; }
+        .call-actions { display: flex; gap: 30px; }
+        .btn-call { border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 25px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; }
+        .btn-call:hover { transform: scale(1.1); }
+        .btn-answer { background-color: #00a884; }
+        .btn-reject { background-color: #d9534f; }
 
         /* Mobile View - Tabs become main nav */
         @media (max-width: 768px) {
             .sidebar { width: 100%; min-width: 100%; flex: 1; }
             .chat-main { position: absolute; top: 0; left: 100%; width: 100%; height: 100%; transition: left 0.3s ease; z-index: 10; }
             .chat-main.active-mobile { left: 0; }
-            #btn-back-mobile { display: block !important; margin-right: 15px; font-size: 20px; background: none; border: none; cursor: pointer; }
+            #btn-back-mobile { display: block !important; margin-right: 15px; font-size: 20px; background: none; border: none; cursor: pointer; color: #54656f; }
         }
         #btn-back-mobile { display: none; }
     </style>
@@ -98,11 +108,10 @@
     <!-- Layar Login -->
     <div id="login-screen">
         <div class="login-box">
-            <h2>Web Chat Pro</h2>
-            <p>Silakan masuk untuk mulai bertukar pesan.</p>
+            <h2>Gibah Dulu Yuk</h2>
             <button id="btn-login" class="btn-google">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.761H12.545z"/></svg>
-                Login dengan Akun Google
+                Cuma Bisa Pake Google
             </button>
         </div>
     </div>
@@ -119,15 +128,13 @@
                     <div class="header">
                         <span style="font-size: 20px; font-weight: bold;">Chats</span>
                     </div>
-                    <div class="chat-list" id="chat-list-container">
-                        <!-- Obrolan aktif dimuat di sini -->
-                    </div>
+                    <div class="list-container" id="chat-list-container"></div>
                 </div>
 
                 <!-- TAB 2: KONTAK & GRUP -->
                 <div id="tab-contacts" class="tab-pane">
                     <div class="header">
-                        <span style="font-size: 20px; font-weight: bold;">Kontak & Grup Baru</span>
+                        <span style="font-size: 20px; font-weight: bold;">Kontak & Grup</span>
                     </div>
                     <div class="menu-box">
                         <div class="menu-row">
@@ -135,13 +142,11 @@
                             <button id="btn-add-contact">+ Kontak</button>
                         </div>
                         <div class="menu-row">
-                            <input type="text" id="group-name-input" placeholder="Nama Grup Baru..." autocomplete="off">
+                            <input type="text" id="group-name-input" placeholder="Nama Grup..." autocomplete="off">
                             <button id="btn-create-group" style="background:#005c4b;">+ Grup</button>
                         </div>
                     </div>
-                    <div class="chat-list" id="contact-list-container">
-                        <!-- Daftar Kontak dimuat di sini -->
-                    </div>
+                    <div class="list-container" id="contact-list-container"></div>
                 </div>
 
                 <!-- TAB 3: PANGGILAN -->
@@ -149,10 +154,8 @@
                     <div class="header">
                         <span style="font-size: 20px; font-weight: bold;">Panggilan</span>
                     </div>
-                    <div class="calls-placeholder">
-                        <span style="font-size: 40px; margin-bottom: 10px;">📞</span>
-                        <h3>Riwayat Panggilan Kosong</h3>
-                        <p>Fitur panggilan akan segera hadir pada pembaruan berikutnya.</p>
+                    <div class="list-container" id="call-history-container">
+                        <!-- Riwayat Panggilan -->
                     </div>
                 </div>
 
@@ -163,59 +166,88 @@
                     </div>
                     <div class="profile-container">
                         <input type="file" id="profile-photo-input" style="display: none;" accept="image/*">
-                        <img src="https://via.placeholder.com/120" id="profile-avatar-preview" class="profile-avatar" title="Klik untuk ganti foto">
+                        <img src="https://via.placeholder.com/120" id="profile-avatar-preview" class="profile-avatar" title="Klik ganti foto">
                         <p style="font-size: 12px; color: #667; margin-top: -5px;">(Klik foto untuk mengubah)</p>
-                        
                         <div class="menu-row" style="margin-top: 15px;">
                             <input type="text" id="profile-name-input" placeholder="Nama Tampilan">
                         </div>
-                        
                         <button id="btn-save-profile" class="profile-btn">Simpan Profil</button>
                         <button id="btn-logout" class="profile-btn logout-btn">Keluar (Logout)</button>
                     </div>
                 </div>
-
             </div>
 
             <!-- Tab Navigation Bar (Bawah) -->
             <div class="tab-nav">
                 <button class="tab-btn active" data-tab="tab-chats">
-                    <span class="icon">💬</span>
-                    <span>Chats</span>
+                    <span class="icon">💬</span><span>Chats</span>
                 </button>
                 <button class="tab-btn" data-tab="tab-contacts">
-                    <span class="icon">👥</span>
-                    <span>Kontak</span>
+                    <span class="icon">👥</span><span>Kontak</span>
                 </button>
                 <button class="tab-btn" data-tab="tab-calls">
-                    <span class="icon">📞</span>
-                    <span>Panggilan</span>
+                    <span class="icon">📞</span><span>Panggilan</span>
                 </button>
                 <button class="tab-btn" data-tab="tab-profile">
-                    <span class="icon">⚙️</span>
-                    <span>Profil</span>
+                    <span class="icon">⚙️</span><span>Profil</span>
                 </button>
             </div>
         </div>
 
         <!-- Ruang Obrolan (Kanan) -->
         <div class="chat-main" id="chat-main-area">
-            <div class="header">
-                <button id="btn-back-mobile">←</button>
-                <div id="chat-main-header">Pilih kontak atau grup untuk mulai chat</div>
-            </div>
-            <div class="chat-history"></div>
             
-            <div class="chat-input-area">
-                <input type="file" id="file-input" style="display: none;" accept="image/*, .pdf, .doc, .docx, .xls, .xlsx, .zip">
-                <button class="action-btn" id="btn-attach" title="Kirim File/Foto">📎</button>
-                <button class="action-btn" id="btn-location" title="Kirim Lokasi">📍</button>
-                
-                <input type="text" id="message-input" placeholder="Ketik pesan..." autocomplete="off"/>
-                
-                <button class="action-btn" id="btn-mic" title="Rekam Suara">🎤</button>
-                <button class="btn-send" id="btn-send">Kirim</button>
+            <!-- BLANK STATE: Muncul saat awal -->
+            <div id="chat-empty-state">
+                <span style="font-size: 80px; color:#d1d7db; margin-bottom: 20px;">💬</span>
+                <h1>Web Chat Pro</h1>
+                <p>Kirim pesan dan lakukan panggilan dari browser Anda.</p>
+                <p>Pilih kontak atau grup untuk memulai.</p>
             </div>
+
+            <!-- CHAT AKTIF: Muncul setelah diklik -->
+            <div id="chat-active-state">
+                <div class="header">
+                    <button id="btn-back-mobile">←</button>
+                    <div id="chat-main-header" style="display: flex; align-items: center; gap: 10px;"></div>
+                    
+                    <!-- Menu Panggilan (Hanya untuk chat pribadi) -->
+                    <div class="header-actions" id="chat-header-actions">
+                        <button class="action-btn" id="btn-start-call" title="Telepon Suara">📞</button>
+                    </div>
+                </div>
+                
+                <div class="chat-history"></div>
+                
+                <div class="chat-input-area">
+                    <input type="file" id="file-input" style="display: none;" accept="image/*, .pdf, .zip">
+                    <button class="action-btn" id="btn-attach" title="Kirim File">📎</button>
+                    <input type="text" id="message-input" placeholder="Ketik pesan..." autocomplete="off"/>
+                    <button class="btn-send" id="btn-send">Kirim</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals Panggilan WebRTC -->
+    <!-- Modal Panggilan Masuk -->
+    <div id="incoming-call-modal" class="call-modal">
+        <h2 id="incoming-caller-name">Seseorang</h2>
+        <p>Memanggil Suara...</p>
+        <div class="call-actions">
+            <button class="btn-call btn-reject" id="btn-reject-call" title="Tolak">✖</button>
+            <button class="btn-call btn-answer" id="btn-answer-call" title="Jawab">📞</button>
+        </div>
+    </div>
+
+    <!-- Modal Panggilan Berlangsung -->
+    <div id="active-call-modal" class="call-modal">
+        <img src="https://via.placeholder.com/100" id="active-call-avatar" class="call-avatar">
+        <h2 id="active-call-name">Nama Kontak</h2>
+        <p id="active-call-status">Memanggil...</p>
+        <audio id="remote-audio" autoplay></audio>
+        <div class="call-actions">
+            <button class="btn-call btn-reject" id="btn-end-call" title="Akhiri">☎</button>
         </div>
     </div>
 
@@ -223,7 +255,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, where, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, where, getDocs, getDoc, onDisconnect } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCx4_E64FBUDyo4RzDDWMLklRlZMvMUlFM",
@@ -231,8 +263,7 @@
             projectId: "gombleh-9dea6",
             storageBucket: "gombleh-9dea6.firebasestorage.app",
             messagingSenderId: "1034286098492",
-            appId: "1:1034286098492:web:87c81098f5ad465e187b39",
-            measurementId: "G-L8W6KQPCY4"
+            appId: "1:1034286098492:web:87c81098f5ad465e187b39"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -240,62 +271,41 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dvhcfc37o/auto/upload"; 
-        const CLOUDINARY_PRESET = "gombleh";
-
         let currentUser = null;
         let activeTargetId = null; 
+        let activeTargetName = null;
         let activeTargetType = 'private'; 
         let unsubscribeChat = null;
 
-        // DOM Elements
+        // UI Elements
         const loginScreen = document.getElementById('login-screen');
         const appContainer = document.getElementById('app-container');
         const chatListContainer = document.getElementById('chat-list-container');
         const contactListContainer = document.getElementById('contact-list-container');
         const chatHistory = document.querySelector('.chat-history');
         const chatMainHeader = document.getElementById('chat-main-header');
+        const chatHeaderActions = document.getElementById('chat-header-actions');
+        const chatEmptyState = document.getElementById('chat-empty-state');
+        const chatActiveState = document.getElementById('chat-active-state');
         const inputMessage = document.getElementById('message-input');
         const chatMainArea = document.getElementById('chat-main-area');
+        const callHistoryContainer = document.getElementById('call-history-container');
 
-        // ==== LOGIKA TAB NAVIGASI ====
+        // Navigasi Tab
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabPanes = document.querySelectorAll('.tab-pane');
-
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                // Hapus aktif dari semua tombol dan panel
                 tabBtns.forEach(b => b.classList.remove('active'));
                 tabPanes.forEach(p => p.classList.remove('active'));
-
-                // Aktifkan yang diklik
                 btn.classList.add('active');
-                const targetPane = document.getElementById(btn.getAttribute('data-tab'));
-                targetPane.classList.add('active');
+                document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
             });
         });
 
-        // Mobile Back Button
         document.getElementById('btn-back-mobile').addEventListener('click', () => {
             chatMainArea.classList.remove('active-mobile');
         });
-
-        function playNotificationSound() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.15);
-            } catch (e) {
-                console.log("Audio diblokir.");
-            }
-        }
 
         // ================= AUTHENTICATION =================
         document.getElementById('btn-login').addEventListener('click', () => {
@@ -303,26 +313,20 @@
             .then(() => signInWithPopup(auth, provider))
             .catch(error => alert("Gagal login: " + error.message));
         });
-
-        document.getElementById('btn-logout').addEventListener('click', () => {
-            signOut(auth).then(() => { location.reload(); });
-        });
+        document.getElementById('btn-logout').addEventListener('click', () => { signOut(auth).then(() => { location.reload(); }); });
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
                 loginScreen.classList.add('hidden');
                 appContainer.classList.remove('hidden');
-
-                // Set Data Profil
                 document.getElementById('profile-avatar-preview').src = user.photoURL || 'https://via.placeholder.com/120';
                 document.getElementById('profile-name-input').value = user.displayName || '';
-
-                await setDoc(doc(db, "users", user.uid), {
-                    uid: user.uid, name: user.displayName, email: user.email, photoURL: user.photoURL
-                }, { merge: true });
+                await setDoc(doc(db, "users", user.uid), { uid: user.uid, name: user.displayName, email: user.email, photoURL: user.photoURL }, { merge: true });
                 
                 loadSidebarItems();
+                listenForIncomingCalls(); 
+                loadCallHistory();
             } else {
                 currentUser = null;
                 loginScreen.classList.remove('hidden');
@@ -330,173 +334,56 @@
             }
         });
 
-        // ================= KONTROL PROFIL =================
-        const profilePhotoInput = document.getElementById('profile-photo-input');
-        const profileAvatarPreview = document.getElementById('profile-avatar-preview');
-        let newProfilePhotoUrl = null;
-
-        profileAvatarPreview.addEventListener('click', () => profilePhotoInput.click());
-
-        profilePhotoInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            profileAvatarPreview.style.opacity = '0.5';
-            try {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_PRESET);
-                const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
-                const data = await response.json();
-                
-                if (data.secure_url) {
-                    newProfilePhotoUrl = data.secure_url;
-                    profileAvatarPreview.src = newProfilePhotoUrl;
-                }
-            } catch (err) {
-                alert("Gagal mengunggah foto.");
-            }
-            profileAvatarPreview.style.opacity = '1';
-        });
-
-        document.getElementById('btn-save-profile').addEventListener('click', async () => {
-            const newName = document.getElementById('profile-name-input').value.trim();
-            if (!newName) return alert("Nama tidak boleh kosong.");
-
-            const btnSave = document.getElementById('btn-save-profile');
-            btnSave.innerText = "Menyimpan...";
-            btnSave.disabled = true;
-
-            try {
-                const updateData = { displayName: newName };
-                if (newProfilePhotoUrl) updateData.photoURL = newProfilePhotoUrl;
-
-                // Update Firebase Auth
-                await updateProfile(auth.currentUser, updateData);
-                
-                // Update Firestore DB
-                await setDoc(doc(db, "users", currentUser.uid), {
-                    name: newName,
-                    photoURL: newProfilePhotoUrl || currentUser.photoURL
-                }, { merge: true });
-
-                alert("Profil berhasil diperbarui!");
-                currentUser = auth.currentUser; // Refresh local user object
-            } catch (err) {
-                alert("Gagal memperbarui profil.");
-            }
-            btnSave.innerText = "Simpan Profil";
-            btnSave.disabled = false;
-        });
-
         // ================= KONTROL KONTAK & GRUP =================
         document.getElementById('btn-add-contact').addEventListener('click', async () => {
             const email = document.getElementById('add-email-input').value.trim().toLowerCase();
             if (!email) return;
             if (email === currentUser.email) return alert("Tidak bisa menambah email sendiri.");
-
             try {
                 const q = query(collection(db, "users"), where("email", "==", email));
                 const snapshot = await getDocs(q);
                 if (snapshot.empty) return alert("Email belum terdaftar.");
-
-                let friendData;
-                snapshot.forEach(doc => friendData = doc.data());
-
+                let friendData; snapshot.forEach(doc => friendData = doc.data());
                 await setDoc(doc(db, "users", currentUser.uid, "contacts", friendData.uid), friendData);
-                alert("Kontak ditambahkan!");
                 document.getElementById('add-email-input').value = '';
-            } catch (error) {
-                alert("Gagal menambah kontak.");
-            }
+                alert("Kontak ditambahkan!");
+            } catch (error) { alert("Gagal menambah kontak."); }
         });
 
-        document.getElementById('btn-create-group').addEventListener('click', async () => {
-            const groupName = document.getElementById('group-name-input').value.trim();
-            if (!groupName) return alert("Masukkan nama grup.");
-
-            try {
-                const groupRef = doc(collection(db, "groups"));
-                await setDoc(groupRef, {
-                    groupId: groupRef.id,
-                    groupName: groupName,
-                    createdBy: currentUser.uid,
-                    members: [currentUser.uid], 
-                    createdAt: serverTimestamp()
-                });
-
-                alert("Grup berhasil dibuat!");
-                document.getElementById('group-name-input').value = '';
-            } catch (error) {
-                alert("Gagal membuat grup.");
-            }
-        });
-
-        // Memuat Kontak dan Grup ke Tab masing-masing
         function loadSidebarItems() {
             chatListContainer.innerHTML = '';
             contactListContainer.innerHTML = '';
-
-            // 1. Muat Kontak Pribadi (Masuk ke Tab Kontak dan Tab Chat)
             const contactsRef = collection(db, "users", currentUser.uid, "contacts");
             onSnapshot(contactsRef, (snapshot) => {
                 document.querySelectorAll('.item-private').forEach(el => el.remove());
-
                 snapshot.forEach((docSnap) => {
                     const data = docSnap.data();
                     const createItem = () => {
                         const div = document.createElement('div');
-                        div.className = 'chat-item item-private';
-                        div.innerHTML = `
-                            <img src="${data.photoURL || 'https://via.placeholder.com/45'}" class="avatar">
-                            <div class="chat-info">
-                                <p class="chat-name">${data.name}</p>
-                                <p class="chat-preview">${data.email}</p>
-                            </div>
-                        `;
-                        div.addEventListener('click', () => {
-                            activeTargetId = data.uid;
-                            activeTargetType = 'private';
-                            chatMainHeader.innerHTML = `<img src="${data.photoURL || 'https://via.placeholder.com/45'}" style="width:35px; height:35px; border-radius:50%; margin-right:10px; object-fit:cover;"> ${data.name}`;
-                            loadChatRoom();
-                            if (window.innerWidth <= 768) chatMainArea.classList.add('active-mobile');
-                        });
+                        div.className = 'list-item item-private';
+                        div.innerHTML = `<img src="${data.photoURL || 'https://via.placeholder.com/45'}" class="avatar"><div class="info"><p class="name">${data.name}</p><p class="preview">${data.email}</p></div>`;
+                        div.addEventListener('click', () => openChat(data.uid, data.name, data.photoURL, 'private'));
                         return div;
                     };
-
                     contactListContainer.appendChild(createItem());
-                    chatListContainer.appendChild(createItem()); // Tampil di Chats juga
+                    chatListContainer.appendChild(createItem());
                 });
             });
 
-            // 2. Muat Grup (Masuk ke Tab Kontak dan Tab Chat)
+            // Grup Data
             const groupsRef = collection(db, "groups");
             onSnapshot(groupsRef, (snapshot) => {
                 document.querySelectorAll('.item-group').forEach(el => el.remove());
-
                 snapshot.forEach((docSnap) => {
                     const gData = docSnap.data();
                     if (gData.members && gData.members.includes(currentUser.uid)) {
                         const createGroupItem = () => {
                             const div = document.createElement('div');
-                            div.className = 'chat-item item-group';
-                            div.innerHTML = `
-                                <div class="avatar" style="background:#00a884; color:white;">👥</div>
-                                <div class="chat-info">
-                                    <p class="chat-name">${gData.groupName}</p>
-                                    <p class="chat-preview">Grup Bersama</p>
-                                </div>
-                            `;
-                            div.addEventListener('click', () => {
-                                activeTargetId = gData.groupId;
-                                activeTargetType = 'group';
-                                chatMainHeader.innerHTML = `👥 ${gData.groupName}`;
-                                loadChatRoom();
-                                if (window.innerWidth <= 768) chatMainArea.classList.add('active-mobile');
-                            });
+                            div.className = 'list-item item-group';
+                            div.innerHTML = `<div class="avatar" style="background:#00a884; color:white;">👥</div><div class="info"><p class="name">${gData.groupName}</p><p class="preview">Grup Bersama</p></div>`;
+                            div.addEventListener('click', () => openChat(gData.groupId, gData.groupName, null, 'group'));
                             return div;
                         };
-                        
                         contactListContainer.appendChild(createGroupItem());
                         chatListContainer.appendChild(createGroupItem());
                     }
@@ -505,157 +392,250 @@
         }
 
         // ================= OBROLAN =================
-        function getChatId() {
-            if (activeTargetType === 'private') {
-                return currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`;
-            } else {
-                return activeTargetId; 
-            }
+        function openChat(id, name, photo, type) {
+            activeTargetId = id;
+            activeTargetName = name;
+            activeTargetType = type;
+            
+            // Sembunyikan state kosong, tampilkan area obrolan
+            chatEmptyState.style.display = 'none';
+            chatActiveState.style.display = 'flex';
+
+            let avatarHtml = type === 'group' ? `<div class="avatar" style="background:#00a884; color:white; width:35px; height:35px; font-size:15px; margin:0;">👥</div>` : `<img src="${photo || 'https://via.placeholder.com/45'}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">`;
+            
+            chatMainHeader.innerHTML = `${avatarHtml} <span style="font-weight:bold; font-size: 16px;">${name}</span>`;
+            
+            // Tampilkan tombol telpon hanya jika chat pribadi
+            chatHeaderActions.style.display = (type === 'private') ? 'block' : 'none';
+
+            if (window.innerWidth <= 768) chatMainArea.classList.add('active-mobile');
+            loadChatRoom();
         }
 
         function loadChatRoom() {
             if (unsubscribeChat) unsubscribeChat();
-            const chatId = getChatId();
+            const chatId = activeTargetType === 'private' ? (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`) : activeTargetId;
             const q = query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc"));
-
-            let isInitialLoad = true;
 
             unsubscribeChat = onSnapshot(q, (snapshot) => {
                 chatHistory.innerHTML = ''; 
-                
                 snapshot.forEach((doc) => {
                     const data = doc.data();
-                    const div = document.createElement('div');
                     const isMine = data.senderId === currentUser.uid;
+                    const div = document.createElement('div');
                     div.className = isMine ? 'message sent' : 'message received';
+                    const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
                     
-                    const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
+                    let content = data.text || '';
+                    if (data.type === 'file') content = `📄 <a href="${data.url}" target="_blank">Lihat File</a>`;
                     
-                    let content = '';
-                    if (data.type === 'text') content = data.text;
-                    else if (data.type === 'image') content = `<img src="${data.url}" onclick="window.open('${data.url}', '_blank')"><br>${data.text || ''}`;
-                    else if (data.type === 'file') content = `📄 <a href="${data.url}" target="_blank">Unduh File (${data.fileName})</a>`;
-                    else if (data.type === 'location') content = `📍 <a href="https://www.google.com/maps/search/?api=1&query=${data.lat},${data.lng}" target="_blank">Lihat Lokasi di Peta</a>`;
-                    else if (data.type === 'audio') content = `<audio controls src="${data.url}"></audio>`;
-
-                    let senderLabel = '';
-                    if (activeTargetType === 'group' && !isMine) {
-                        senderLabel = `<div class="msg-sender">${data.senderName || 'Anggota'}</div>`;
-                    }
-
+                    let senderLabel = (activeTargetType === 'group' && !isMine) ? `<div class="msg-sender">${data.senderName}</div>` : '';
                     div.innerHTML = `${senderLabel}${content} <span class="msg-time">${time}</span>`;
                     chatHistory.appendChild(div);
                 });
-
-                if (!isInitialLoad && !snapshot.empty) {
-                    const lastDoc = snapshot.docs[snapshot.docs.length - 1].data();
-                    if (lastDoc.senderId !== currentUser.uid) playNotificationSound();
-                }
-
-                isInitialLoad = false;
                 chatHistory.scrollTop = chatHistory.scrollHeight;
             });
         }
 
-        async function sendMessageToDb(payload) {
-            if (!activeTargetId) return alert("Pilih kontak atau grup terlebih dahulu!");
-            const chatId = getChatId();
-            try {
-                await addDoc(collection(db, "chats", chatId, "messages"), {
-                    ...payload,
-                    senderId: currentUser.uid,
-                    senderName: currentUser.displayName,
-                    timestamp: serverTimestamp()
-                });
-            } catch (error) {
-                console.error("Gagal kirim:", error);
-            }
-        }
-
-        // Kirim Pesan Teks & Ekstraksi File/Media (Sama seperti sebelumnya)
         document.getElementById('btn-send').addEventListener('click', () => {
             const text = inputMessage.value.trim();
-            if (text) {
-                sendMessageToDb({ type: 'text', text: text });
+            if (text && activeTargetId) {
+                const chatId = activeTargetType === 'private' ? (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`) : activeTargetId;
+                addDoc(collection(db, "chats", chatId, "messages"), { type: 'text', text: text, senderId: currentUser.uid, senderName: currentUser.displayName, timestamp: serverTimestamp() });
                 inputMessage.value = '';
-                inputMessage.focus();
             }
         });
-        inputMessage.addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btn-send').click(); });
 
-        const btnAttach = document.getElementById('btn-attach');
-        const fileInput = document.getElementById('file-input');
-        btnAttach.addEventListener('click', () => fileInput.click());
-        
-        fileInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+        // ================= WEBRTC PANGGILAN SUARA (SIGNALING FIRESTORE) =================
+        const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }] };
+        let pc = null;
+        let localStream = null;
+        let currentCallDocId = null;
+        let callSnapshotUnsub = null;
+
+        const modalIncoming = document.getElementById('incoming-call-modal');
+        const modalActive = document.getElementById('active-call-modal');
+        const remoteAudio = document.getElementById('remote-audio');
+
+        // Log Panggilan ke Tab Panggilan
+        async function logCallToHistory(type, status, peerName) {
+            await addDoc(collection(db, "users", currentUser.uid, "call_history"), {
+                peerName: peerName, type: type, status: status, timestamp: serverTimestamp()
+            });
+        }
+
+        // Tampilkan Tab Panggilan
+        function loadCallHistory() {
+            const q = query(collection(db, "users", currentUser.uid, "call_history"), orderBy("timestamp", "desc"));
+            onSnapshot(q, (snapshot) => {
+                callHistoryContainer.innerHTML = '';
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString([], {day:'numeric', month:'short', hour: '2-digit', minute:'2-digit'}) : '';
+                    const icon = data.type === 'outgoing' ? '↗️' : '↙️';
+                    const statusColor = data.status === 'answered' ? 'green' : 'red';
+                    
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.innerHTML = `
+                        <div class="avatar" style="background:#f0f2f5;">📞</div>
+                        <div class="info">
+                            <p class="name">${data.peerName}</p>
+                            <p class="preview"><span style="color:${statusColor}">${icon} ${data.status}</span> • ${time}</p>
+                        </div>
+                    `;
+                    callHistoryContainer.appendChild(div);
+                });
+            });
+        }
+
+        // 1. Memulai Panggilan
+        document.getElementById('btn-start-call').addEventListener('click', async () => {
+            if (activeTargetType !== 'private') return;
             
-            btnAttach.style.opacity = '0.5';
+            modalActive.style.display = 'flex';
+            document.getElementById('active-call-name').innerText = activeTargetName;
+            document.getElementById('active-call-status').innerText = "Memanggil...";
+
+            pc = new RTCPeerConnection(servers);
             try {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_PRESET);
-                const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
-                const data = await response.json();
-                
-                if (data.secure_url) {
-                    const type = file.type.startsWith('image/') ? 'image' : 'file';
-                    await sendMessageToDb({ type: type, url: data.secure_url, fileName: file.name, text: '' });
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+            } catch (e) {
+                alert("Gagal akses mikrofon!"); stopCallCleanup(); return;
+            }
+
+            pc.ontrack = event => { remoteAudio.srcObject = event.streams[0]; };
+
+            const callDocRef = doc(collection(db, "calls"));
+            currentCallDocId = callDocRef.id;
+            const offerCandidates = collection(callDocRef, 'offerCandidates');
+            const answerCandidates = collection(callDocRef, 'answerCandidates');
+
+            pc.onicecandidate = event => { if (event.candidate) addDoc(offerCandidates, event.candidate.toJSON()); };
+
+            const offerDescription = await pc.createOffer();
+            await pc.setLocalDescription(offerDescription);
+
+            await setDoc(callDocRef, {
+                callerId: currentUser.uid, callerName: currentUser.displayName,
+                calleeId: activeTargetId, offer: { type: offerDescription.type, sdp: offerDescription.sdp },
+                status: 'calling', timestamp: serverTimestamp()
+            });
+
+            logCallToHistory('outgoing', 'calling', activeTargetName);
+
+            // Listener jawaban / penolakan
+            callSnapshotUnsub = onSnapshot(callDocRef, (docSnap) => {
+                const data = docSnap.data();
+                if (data?.answer && !pc.currentRemoteDescription) {
+                    pc.setRemoteDescription(new RTCSessionDescription(data.answer));
                 }
-            } catch (error) {
-                alert("Gagal mengunggah file.");
+                if (data?.status === 'answered') {
+                    document.getElementById('active-call-status').innerText = "Terhubung";
+                    logCallToHistory('outgoing', 'answered', activeTargetName);
+                }
+                if (data?.status === 'ended' || data?.status === 'rejected') {
+                    stopCallCleanup();
+                }
+            });
+
+            // Listener ICE Remote
+            onSnapshot(answerCandidates, snapshot => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                });
+            });
+        });
+
+        // 2. Mendengarkan Panggilan Masuk
+        function listenForIncomingCalls() {
+            const q = query(collection(db, "calls"), where("calleeId", "==", currentUser.uid), where("status", "==", "calling"));
+            onSnapshot(q, (snapshot) => {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const callData = change.doc.data();
+                        currentCallDocId = change.doc.id;
+                        document.getElementById('incoming-caller-name').innerText = callData.callerName;
+                        modalIncoming.style.display = 'flex';
+                    }
+                });
+            });
+        }
+
+        // 3. Menjawab Panggilan
+        document.getElementById('btn-answer-call').addEventListener('click', async () => {
+            modalIncoming.style.display = 'none';
+            modalActive.style.display = 'flex';
+            document.getElementById('active-call-name').innerText = document.getElementById('incoming-caller-name').innerText;
+            document.getElementById('active-call-status').innerText = "Menghubungkan...";
+
+            pc = new RTCPeerConnection(servers);
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+            } catch (e) {
+                alert("Gagal akses mikrofon!"); stopCallCleanup(); return;
             }
-            btnAttach.style.opacity = '1';
-            fileInput.value = '';
+
+            pc.ontrack = event => { remoteAudio.srcObject = event.streams[0]; };
+
+            const callDocRef = doc(db, "calls", currentCallDocId);
+            const offerCandidates = collection(callDocRef, 'offerCandidates');
+            const answerCandidates = collection(callDocRef, 'answerCandidates');
+
+            pc.onicecandidate = event => { if (event.candidate) addDoc(answerCandidates, event.candidate.toJSON()); };
+
+            const callData = (await getDoc(callDocRef)).data();
+            await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
+            const answerDescription = await pc.createAnswer();
+            await pc.setLocalDescription(answerDescription);
+
+            await updateDoc(callDocRef, {
+                answer: { type: answerDescription.type, sdp: answerDescription.sdp },
+                status: 'answered'
+            });
+
+            logCallToHistory('incoming', 'answered', callData.callerName);
+            document.getElementById('active-call-status').innerText = "Terhubung";
+
+            onSnapshot(offerCandidates, snapshot => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                });
+            });
+
+            callSnapshotUnsub = onSnapshot(callDocRef, (docSnap) => {
+                if (docSnap.data()?.status === 'ended') stopCallCleanup();
+            });
         });
 
-        document.getElementById('btn-location').addEventListener('click', () => {
-            if (!activeTargetId) return alert("Pilih tujuan chat dulu!");
-            if (!navigator.geolocation) return alert("GPS tidak didukung.");
-            
-            navigator.geolocation.getCurrentPosition((position) => {
-                sendMessageToDb({ type: 'location', lat: position.coords.latitude, lng: position.coords.longitude });
-            }, () => alert("Gagal mengambil lokasi."));
-        });
-
-        const btnMic = document.getElementById('btn-mic');
-        let mediaRecorder, audioChunks = [], isRecording = false;
-
-        btnMic.addEventListener('click', async () => {
-            if (!activeTargetId) return alert("Pilih tujuan chat dulu!");
-            if (!isRecording) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
-                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                    mediaRecorder.onstop = async () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        audioChunks = [];
-                        btnMic.style.opacity = '0.5';
-                        const formData = new FormData();
-                        formData.append('file', audioBlob);
-                        formData.append('upload_preset', CLOUDINARY_PRESET);
-                        formData.append('resource_type', 'auto'); 
-
-                        try {
-                            const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
-                            const data = await response.json();
-                            if (data.secure_url) await sendMessageToDb({ type: 'audio', url: data.secure_url });
-                        } catch (err) { alert("Gagal mengirim suara."); }
-                        btnMic.style.opacity = '1';
-                        stream.getTracks().forEach(track => track.stop());
-                    };
-                    mediaRecorder.start();
-                    isRecording = true;
-                    btnMic.classList.add('recording'); 
-                } catch (err) { alert("Gagal mengakses mikrofon."); }
-            } else {
-                mediaRecorder.stop();
-                isRecording = false;
-                btnMic.classList.remove('recording');
+        // 4. Tolak Panggilan
+        document.getElementById('btn-reject-call').addEventListener('click', async () => {
+            modalIncoming.style.display = 'none';
+            if (currentCallDocId) {
+                await updateDoc(doc(db, "calls", currentCallDocId), { status: 'rejected' });
+                logCallToHistory('incoming', 'missed/rejected', document.getElementById('incoming-caller-name').innerText);
             }
         });
+
+        // 5. Akhiri Panggilan
+        document.getElementById('btn-end-call').addEventListener('click', async () => {
+            if (currentCallDocId) {
+                await updateDoc(doc(db, "calls", currentCallDocId), { status: 'ended' });
+            }
+            stopCallCleanup();
+        });
+
+        function stopCallCleanup() {
+            if (pc) { pc.close(); pc = null; }
+            if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
+            if (callSnapshotUnsub) { callSnapshotUnsub(); callSnapshotUnsub = null; }
+            modalActive.style.display = 'none';
+            modalIncoming.style.display = 'none';
+            currentCallDocId = null;
+        }
+
     </script>
 </body>
 </html>
