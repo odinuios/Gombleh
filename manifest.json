@@ -8,6 +8,10 @@
   "theme_color": "#00a884",
   "description": "Gibah Dolo Yok",
   "orientation": "portrait",
+  "permissions": [
+    "microphone",
+    "camera"
+  ],
   "categories": ["social", "communication"],
   "icons": [
     {
