@@ -280,9 +280,22 @@
                 
                 <div class="chat-history"></div>
                 
-                <div class="chat-input-area">
-                    <input type="file" id="file-input" style="display: none;" accept="image/*, .pdf, .zip">
-                    <button class="action-btn" id="btn-attach" title="Kirim File/Foto">📎</button>
+                <!-- PERBAIKAN FITUR LAMPIRAN -->
+                <div class="chat-input-area" style="position: relative;">
+                    <!-- Menu Dropdown Lampiran -->
+                    <div id="attach-menu" class="dropdown-menu" style="bottom: 50px; left: 15px; width: 160px; z-index: 10;">
+                        <button class="dropdown-item" id="attach-photo">🖼️ Foto</button>
+                        <button class="dropdown-item" id="attach-camera">📷 Kamera</button>
+                        <button class="dropdown-item" id="attach-file">📄 File</button>
+                        <button class="dropdown-item" id="attach-location">📍 Lokasi</button>
+                    </div>
+                    
+                    <!-- Input Hidden yang dipisah -->
+                    <input type="file" id="input-photo" style="display: none;" accept="image/*">
+                    <input type="file" id="input-camera" style="display: none;" accept="image/*" capture="environment">
+                    <input type="file" id="input-file" style="display: none;" accept="*/*">
+                    
+                    <button class="action-btn" id="btn-attach" title="Lampirkan">📎</button>
                     <input type="text" id="message-input" placeholder="Ketik pesan..." autocomplete="off"/>
                     <button class="btn-send" id="btn-send">Kirim</button>
                 </div>
@@ -367,15 +380,33 @@
             setTimeout(() => { if(bannerContainer.contains(banner)) banner.remove(); }, 4500);
         }
 
-        // Penanganan Tombol Lampiran File/Foto
+        // ================= PENANGANAN LAMPIRAN (FOTO, KAMERA, FILE, LOKASI) =================
         const btnAttach = document.getElementById('btn-attach');
-        const fileInput = document.getElementById('file-input');
+        const attachMenu = document.getElementById('attach-menu');
 
-        btnAttach.addEventListener('click', () => {
-            fileInput.click();
+        const inputPhoto = document.getElementById('input-photo');
+        const inputCamera = document.getElementById('input-camera');
+        const inputFile = document.getElementById('input-file');
+
+        // Buka/Tutup menu lampiran
+        btnAttach.addEventListener('click', (e) => {
+            e.stopPropagation();
+            attachMenu.classList.toggle('show');
         });
 
-        fileInput.addEventListener('change', async (e) => {
+        // Tutup menu jika klik di luar area
+        window.addEventListener('click', () => {
+            if (attachMenu && attachMenu.classList.contains('show')) {
+                attachMenu.classList.remove('show');
+            }
+        });
+
+        // Memicu input file tersembunyi
+        document.getElementById('attach-photo').addEventListener('click', () => inputPhoto.click());
+        document.getElementById('attach-camera').addEventListener('click', () => inputCamera.click());
+        document.getElementById('attach-file').addEventListener('click', () => inputFile.click());
+
+        async function handleAttachment(e) {
             const file = e.target.files[0];
             if (!file || !activeTargetId) return;
 
@@ -385,12 +416,42 @@
             await addDoc(collection(db, "chats", chatId, "messages"), {
                 senderId: currentUser.uid,
                 senderName: currentUser.displayName,
-                text: `[Lampiran File: ${fileName}]`,
+                text: `[Lampiran: ${fileName}]`,
                 type: 'file',
                 timestamp: serverTimestamp()
             });
             
-            fileInput.value = '';
+            e.target.value = ''; // Reset input agar bisa mengirim file yang sama lagi
+        }
+
+        inputPhoto.addEventListener('change', handleAttachment);
+        inputCamera.addEventListener('change', handleAttachment);
+        inputFile.addEventListener('change', handleAttachment);
+
+        // Fitur Kirim Lokasi
+        document.getElementById('attach-location').addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                alert("Geolokasi tidak didukung di browser Anda.");
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                if (!activeTargetId) return;
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const locationLink = `https://www.google.com/maps?q=${lat},${lon}`;
+                
+                const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
+                
+                await addDoc(collection(db, "chats", chatId, "messages"), {
+                    senderId: currentUser.uid,
+                    senderName: currentUser.displayName,
+                    text: `📍 [Lokasi Saya](${locationLink})`,
+                    type: 'location',
+                    timestamp: serverTimestamp()
+                });
+            }, () => {
+                alert("Gagal mengambil lokasi. Pastikan izin lokasi diberikan.");
+            });
         });
 
         const loginScreen = document.getElementById('login-screen');
@@ -979,7 +1040,7 @@
         
         const storage = getStorage(app);
 
-        // Logika Ganti Foto & Simpan Profil
+        // ================= LOGIKA GANTI FOTO & SIMPAN PROFIL =================
         const photoInput = document.getElementById('profile-photo-input');
         const avatarPreview = document.getElementById('profile-avatar-preview');
         let selectedProfileFile = null;
@@ -987,7 +1048,7 @@
         avatarPreview.addEventListener('click', () => photoInput.click());
 
         photoInput.addEventListener('change', (e) => {
-            if (e.target.files[0]) {
+            if (e.target.files && e.target.files[0]) {
                 selectedProfileFile = e.target.files[0];
                 avatarPreview.src = URL.createObjectURL(selectedProfileFile);
             }
@@ -1002,7 +1063,8 @@
             btn.disabled = true;
 
             try {
-                let newPhotoUrl = currentUser.photoURL;
+                // PERBAIKAN: Set ke null jika undefined agar Firestore tidak error
+                let newPhotoUrl = currentUser.photoURL || null; 
                 
                 if (selectedProfileFile) {
                     const storageRef = ref(storage, `avatars/${currentUser.uid}`);
@@ -1010,8 +1072,16 @@
                     newPhotoUrl = await getDownloadURL(storageRef);
                 }
 
+                // Update di Auth
                 await updateProfile(currentUser, { displayName: newName, photoURL: newPhotoUrl });
-                await setDoc(doc(db, "users", currentUser.uid), { name: newName, photoURL: newPhotoUrl }, { merge: true });
+                
+                // Update di Firestore (Hanya sertakan photoURL jika tidak null)
+                const userDocData = { name: newName };
+                if (newPhotoUrl) {
+                    userDocData.photoURL = newPhotoUrl;
+                }
+                
+                await setDoc(doc(db, "users", currentUser.uid), userDocData, { merge: true });
                 
                 alert("Profil berhasil diperbarui!");
             } catch (error) {
