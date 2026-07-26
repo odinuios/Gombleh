@@ -748,9 +748,15 @@
                             document.getElementById(`chat-item-${contactData.uid}`)?.remove();
                             document.getElementById(`contact-item-${contactData.uid}`)?.remove();
 
-                            // Listener tambahan untuk menghitung pesan grup belum dibaca
-                            onSnapshot(query(collection(db, "chats", chatId, "messages"), where("senderId", "!=", currentUser.uid), where("status", "!=", "read")), (msgSnap) => {
-                                const unreadCount = msgSnap.size;
+                            // Listener unread count grup yang lebih aman
+                            onSnapshot(collection(db, "chats", chatId, "messages"), (msgSnap) => {
+                                let unreadCount = 0;
+                                msgSnap.forEach(mDoc => {
+                                    const mData = mDoc.data();
+                                    if (mData.senderId !== currentUser.uid && mData.status !== 'read') {
+                                        unreadCount++;
+                                    }
+                                });
                                 const badgeEl = document.getElementById(`unread-badge-${contactData.uid}`);
                                 if (badgeEl) {
                                     if (unreadCount > 0) {
@@ -846,9 +852,15 @@
                             document.getElementById(`chat-item-${contactData.uid}`)?.remove();
                             document.getElementById(`contact-item-${contactData.uid}`)?.remove();
 
-                            // Listener tambahan untuk menghitung pesan belum dibaca (hanya pesan yang ditujukan ke kita dan belum 'read')
-                            onSnapshot(query(collection(db, "chats", chatId, "messages"), where("senderId", "==", latestData.uid), where("status", "!=", "read")), (msgSnap) => {
-                                const unreadCount = msgSnap.size;
+                            // Listener unread count privat yang lebih aman
+                            onSnapshot(collection(db, "chats", chatId, "messages"), (msgSnap) => {
+                                let unreadCount = 0;
+                                msgSnap.forEach(mDoc => {
+                                    const mData = mDoc.data();
+                                    if (mData.senderId === latestData.uid && mData.status !== 'read') {
+                                        unreadCount++;
+                                    }
+                                });
                                 const badgeEl = document.getElementById(`unread-badge-${contactData.uid}`);
                                 if (badgeEl) {
                                     if (unreadCount > 0) {
