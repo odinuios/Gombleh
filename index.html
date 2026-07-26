@@ -1098,58 +1098,74 @@ snapshot.forEach(docSnap => {
         
         const storage = getStorage(app);
 
-        // ================= LOGIKA GANTI FOTO & SIMPAN PROFIL =================
-        const photoInput = document.getElementById('profile-photo-input');
-        const avatarPreview = document.getElementById('profile-avatar-preview');
-        let selectedProfileFile = null;
+// ================= LOGIKA GANTI FOTO & SIMPAN PROFIL (MENGGUNAKAN CLOUDINARY) =================
+const photoInput = document.getElementById('profile-photo-input');
+const avatarPreview = document.getElementById('profile-avatar-preview');
+let selectedProfileFile = null;
 
-        avatarPreview.addEventListener('click', () => photoInput.click());
+avatarPreview.addEventListener('click', () => photoInput.click());
 
-        photoInput.addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-                selectedProfileFile = e.target.files[0];
-                avatarPreview.src = URL.createObjectURL(selectedProfileFile);
+photoInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) {
+        selectedProfileFile = e.target.files[0];
+        avatarPreview.src = URL.createObjectURL(selectedProfileFile);
+    }
+});
+
+document.getElementById('btn-save-profile').addEventListener('click', async () => {
+    const newName = document.getElementById('profile-name-input').value.trim();
+    if (!newName) return alert("Nama tidak boleh kosong.");
+    
+    const btn = document.getElementById('btn-save-profile');
+    btn.innerText = "Menyimpan...";
+    btn.disabled = true;
+
+    try {
+        let newPhotoUrl = currentUser.photoURL || null; 
+        
+        // Jika pengguna memilih foto profil baru, unggah ke Cloudinary
+        if (selectedProfileFile) {
+            // Sesuaikan dengan Cloud Name dan Upload Preset Cloudinary Anda
+            const CLOUD_NAME = "NAMA_CLOUD_ANDA"; 
+            const UPLOAD_PRESET = "UPLOAD_PRESET_ANDA"; 
+
+            const formData = new FormData();
+            formData.append("file", selectedProfileFile);
+            formData.append("upload_preset", UPLOAD_PRESET);
+
+            const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+            if (!data.secure_url) {
+                throw new Error("Gagal mengunggah foto profil ke Cloudinary");
             }
-        });
 
-        document.getElementById('btn-save-profile').addEventListener('click', async () => {
-            const newName = document.getElementById('profile-name-input').value.trim();
-            if (!newName) return alert("Nama tidak boleh kosong.");
-            
-            const btn = document.getElementById('btn-save-profile');
-            btn.innerText = "Menyimpan...";
-            btn.disabled = true;
+            newPhotoUrl = data.secure_url;
+        }
 
-            try {
-                // PERBAIKAN: Set ke null jika undefined agar Firestore tidak error
-                let newPhotoUrl = currentUser.photoURL || null; 
-                
-                if (selectedProfileFile) {
-                    const storageRef = ref(storage, `avatars/${currentUser.uid}`);
-                    await uploadBytes(storageRef, selectedProfileFile);
-                    newPhotoUrl = await getDownloadURL(storageRef);
-                }
-
-                // Update di Auth
-                await updateProfile(currentUser, { displayName: newName, photoURL: newPhotoUrl });
-                
-                // Update di Firestore (Hanya sertakan photoURL jika tidak null)
-                const userDocData = { name: newName };
-                if (newPhotoUrl) {
-                    userDocData.photoURL = newPhotoUrl;
-                }
-                
-                await setDoc(doc(db, "users", currentUser.uid), userDocData, { merge: true });
-                
-                alert("Profil berhasil diperbarui!");
-            } catch (error) {
-                console.error("Gagal update profil:", error);
-                alert("Gagal menyimpan profil: " + error.message);
-            } finally {
-                btn.innerText = "Simpan Profil";
-                btn.disabled = false;
-            }
-        });
+        // Update di Firebase Auth
+        await updateProfile(currentUser, { displayName: newName, photoURL: newPhotoUrl });
+        
+        // Update di Firestore
+        const userDocData = { name: newName };
+        if (newPhotoUrl) {
+            userDocData.photoURL = newPhotoUrl;
+        }
+        
+        await setDoc(doc(db, "users", currentUser.uid), userDocData, { merge: true });
+        
+        alert("Profil berhasil diperbarui!");
+    } catch (error) {
+        console.error("Gagal update profil:", error);
+        alert("Gagal menyimpan profil: " + error.message);
+    } finally {
+        btn.innerText = "Simpan Profil";
+        btn.disabled = false;
+    }
+});
 
         // --- SCRIPT PEMBASMI BANNER VERCEL ---
         setInterval(() => {
