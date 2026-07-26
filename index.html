@@ -68,7 +68,7 @@
 
         /* Layar Chat Aktif */
         #chat-active-state { display: none; flex-direction: column; height: 100%; width: 100%; background-color: #efeae2; }
-        .header-actions { margin-left: auto; display: none; }
+        .header-actions { margin-left: auto; display: flex; gap: 5px; }
 
         .chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: contain; }
         
@@ -87,7 +87,7 @@
         .action-btn:hover { background: #d9d9d9; }
         .btn-send { background-color: #00a884; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-        /* Modal Panggilan Video / Suara */
+        /* Modal Panggilan */
         .call-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.9); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; }
         .call-avatar { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 20px; object-fit: cover; border: 3px solid #00a884; }
         .call-modal h2 { margin: 0 0 10px 0; font-size: 24px; font-weight: 500; }
@@ -209,7 +209,8 @@
                     <button id="btn-back-mobile">←</button>
                     <div id="chat-main-header" style="display: flex; align-items: center; gap: 10px;"></div>
                     <div class="header-actions" id="chat-header-actions">
-                        <button class="action-btn" id="btn-start-call" title="Video Call">📹</button>
+                        <button class="action-btn" id="btn-start-voice-call" title="Panggilan Suara">📞</button>
+                        <button class="action-btn" id="btn-start-video-call" title="Video Call">📹</button>
                     </div>
                 </div>
                 
@@ -228,19 +229,22 @@
     <!-- Modals Panggilan Masuk -->
     <div id="incoming-call-modal" class="call-modal">
         <h2 id="incoming-caller-name">Seseorang</h2>
-        <p>Panggilan Video Masuk...</p>
+        <p id="incoming-call-type">Memanggil...</p>
         <div class="call-actions">
             <button class="btn-call btn-reject" id="btn-reject-call" title="Tolak">✖</button>
-            <button class="btn-call btn-answer" id="btn-answer-call" title="Jawab">📹</button>
+            <button class="btn-call btn-answer" id="btn-answer-call" title="Jawab">📞</button>
         </div>
     </div>
 
-    <!-- Modal Panggilan Aktif (Video Call) -->
+    <!-- Modal Panggilan Aktif (Mendukung Voice / Video Call) -->
     <div id="active-call-modal" class="call-modal">
-        <video id="remote-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1;"></video>
-        <video id="local-video" autoplay playsinline muted style="width: 100px; height: 140px; object-fit: cover; position: absolute; top: 20px; right: 20px; border-radius: 10px; border: 2px solid white; z-index: 2; background: #000;"></video>
+        <video id="remote-video" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; z-index: 1; background: #111;"></video>
+        <video id="local-video" autoplay playsinline muted style="width: 100px; height: 140px; object-fit: cover; position: absolute; top: 20px; right: 20px; border-radius: 10px; border: 2px solid white; z-index: 2; background: #000; display:none;"></video>
+        <audio id="remote-audio" autoplay></audio>
         
         <div style="z-index: 3; position: relative; margin-top: auto; margin-bottom: 30px; display: flex; flex-direction: column; align-items: center; width: 100%;">
+            <img src="https://via.placeholder.com/100" id="active-call-avatar" class="call-avatar" style="display:none;">
+            <h2 id="active-call-name" style="margin-bottom: 5px;">Nama</h2>
             <p id="active-call-status" style="margin-bottom: 15px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px;">Memanggil...</p>
             <div class="call-actions">
                 <button class="btn-call btn-reject" id="btn-end-call" title="Akhiri">☎</button>
@@ -276,6 +280,7 @@
         let activeTargetName = null;
         let activeTargetType = 'private'; 
         let unsubscribeChat = null;
+        let currentCallMode = 'voice'; // 'voice' atau 'video'
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -489,7 +494,7 @@
             let avatarHtml = type === 'group' ? `<div class="avatar" style="background:#00a884; color:white; width:35px; height:35px; font-size:15px; margin:0;">👥</div>` : `<img src="${photo || 'https://via.placeholder.com/45'}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">`;
             
             chatMainHeader.innerHTML = `${avatarHtml} <span style="font-weight:bold; font-size: 16px;">${name}</span>`;
-            chatHeaderActions.style.display = (type === 'private') ? 'block' : 'none';
+            chatHeaderActions.style.display = (type === 'private') ? 'flex' : 'none';
 
             if (window.innerWidth <= 768) chatMainArea.classList.add('active-mobile');
             loadChatRoom();
@@ -562,7 +567,7 @@
             fileInput.value = '';
         });
 
-        // ================= WEBRTC VIDEO CALL =================
+        // ================= WEBRTC PANGGILAN (VOICE / VIDEO) =================
         const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }] };
         let pc = null;
         let localStream = null;
@@ -573,10 +578,11 @@
         const modalActive = document.getElementById('active-call-modal');
         const remoteVideo = document.getElementById('remote-video');
         const localVideo = document.getElementById('local-video');
+        const remoteAudio = document.getElementById('remote-audio');
 
-        async function logCallToHistory(type, status, peerName) {
+        async function logCallToHistory(type, callMode, status, peerName) {
             await addDoc(collection(db, "users", currentUser.uid, "call_history"), {
-                peerName: peerName, type: type, status: status, timestamp: serverTimestamp()
+                peerName: peerName, type: type, callMode: callMode, status: status, timestamp: serverTimestamp()
             });
         }
 
@@ -587,16 +593,17 @@
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
                     const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleString([], {day:'numeric', month:'short', hour: '2-digit', minute:'2-digit'}) : '';
-                    const icon = data.type === 'outgoing' ? '↗️' : '↙️';
+                    const arrowIcon = data.type === 'outgoing' ? '↗️' : '↙️';
+                    const callIcon = data.callMode === 'video' ? '📹' : '📞';
                     const statusColor = data.status === 'answered' ? 'green' : 'red';
                     
                     const div = document.createElement('div');
                     div.className = 'list-item';
                     div.innerHTML = `
-                        <div class="avatar" style="background:#f0f2f5;">📹</div>
+                        <div class="avatar" style="background:#f0f2f5;">${callIcon}</div>
                         <div class="info">
                             <p class="name">${data.peerName}</p>
-                            <p class="preview"><span style="color:${statusColor}">${icon} ${data.status}</span> • ${time}</p>
+                            <p class="preview"><span style="color:${statusColor}">${arrowIcon} ${data.status}</span> • ${time}</p>
                         </div>
                     `;
                     callHistoryContainer.appendChild(div);
@@ -604,22 +611,42 @@
             });
         }
 
-        document.getElementById('btn-start-call').addEventListener('click', async () => {
+        async function startCall(mode) {
             if (activeTargetType !== 'private') return;
+            currentCallMode = mode;
             
             modalActive.style.display = 'flex';
-            document.getElementById('active-call-status').innerText = "Memanggil Video...";
+            document.getElementById('active-call-name').innerText = activeTargetName;
+            document.getElementById('active-call-status').innerText = mode === 'video' ? "Memanggil Video..." : "Memanggil Suara...";
+            
+            if (mode === 'video') {
+                localVideo.style.display = 'block';
+                remoteVideo.style.display = 'block';
+                document.getElementById('active-call-avatar').style.display = 'none';
+            } else {
+                localVideo.style.display = 'none';
+                remoteVideo.style.display = 'none';
+                document.getElementById('active-call-avatar').style.display = 'block';
+                document.getElementById('active-call-avatar').src = activeTargetName ? 'https://via.placeholder.com/100' : '';
+            }
 
             pc = new RTCPeerConnection(servers);
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-                localVideo.srcObject = localStream;
+                const constraints = mode === 'video' ? { audio: true, video: true } : { audio: true, video: false };
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                if (mode === 'video') localVideo.srcObject = localStream;
                 localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             } catch (e) {
-                alert("Gagal akses kamera/mikrofon!"); stopCallCleanup(); return;
+                alert("Gagal mengakses perangkat media (Kamera/Mikrofon)!"); stopCallCleanup(); return;
             }
 
-            pc.ontrack = event => { remoteVideo.srcObject = event.streams[0]; };
+            pc.ontrack = event => {
+                if (mode === 'video') {
+                    remoteVideo.srcObject = event.streams[0];
+                } else {
+                    remoteAudio.srcObject = event.streams[0];
+                }
+            };
 
             const callDocRef = doc(collection(db, "calls"));
             currentCallDocId = callDocRef.id;
@@ -633,11 +660,12 @@
 
             await setDoc(callDocRef, {
                 callerId: currentUser.uid, callerName: currentUser.displayName,
-                calleeId: activeTargetId, offer: { type: offerDescription.type, sdp: offerDescription.sdp },
+                calleeId: activeTargetId, callMode: mode,
+                offer: { type: offerDescription.type, sdp: offerDescription.sdp },
                 status: 'calling', timestamp: serverTimestamp()
             });
 
-            logCallToHistory('outgoing', 'calling', activeTargetName);
+            logCallToHistory('outgoing', mode, 'calling', activeTargetName);
 
             callSnapshotUnsub = onSnapshot(callDocRef, (docSnap) => {
                 const data = docSnap.data();
@@ -646,7 +674,7 @@
                 }
                 if (data?.status === 'answered') {
                     document.getElementById('active-call-status').innerText = "Terhubung";
-                    logCallToHistory('outgoing', 'answered', activeTargetName);
+                    logCallToHistory('outgoing', mode, 'answered', activeTargetName);
                 }
                 if (data?.status === 'ended' || data?.status === 'rejected') {
                     stopCallCleanup();
@@ -658,7 +686,10 @@
                     if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
                 });
             });
-        });
+        }
+
+        document.getElementById('btn-start-voice-call').addEventListener('click', () => startCall('voice'));
+        document.getElementById('btn-start-video-call').addEventListener('click', () => startCall('video'));
 
         function listenForIncomingCalls() {
             const q = query(collection(db, "calls"), where("calleeId", "==", currentUser.uid), where("status", "==", "calling"));
@@ -667,7 +698,9 @@
                     if (change.type === "added") {
                         const callData = change.doc.data();
                         currentCallDocId = change.doc.id;
+                        currentCallMode = callData.callMode || 'voice';
                         document.getElementById('incoming-caller-name').innerText = callData.callerName;
+                        document.getElementById('incoming-call-type').innerText = currentCallMode === 'video' ? "Panggilan Video Masuk..." : "Panggilan Suara Masuk...";
                         modalIncoming.style.display = 'flex';
                     }
                 });
@@ -677,18 +710,36 @@
         document.getElementById('btn-answer-call').addEventListener('click', async () => {
             modalIncoming.style.display = 'none';
             modalActive.style.display = 'flex';
-            document.getElementById('active-call-status').innerText = "Menghubungkan Video...";
+            document.getElementById('active-call-name').innerText = document.getElementById('incoming-caller-name').innerText;
+            document.getElementById('active-call-status').innerText = "Menghubungkan...";
+
+            if (currentCallMode === 'video') {
+                localVideo.style.display = 'block';
+                remoteVideo.style.display = 'block';
+                document.getElementById('active-call-avatar').style.display = 'none';
+            } else {
+                localVideo.style.display = 'none';
+                remoteVideo.style.display = 'none';
+                document.getElementById('active-call-avatar').style.display = 'block';
+            }
 
             pc = new RTCPeerConnection(servers);
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-                localVideo.srcObject = localStream;
+                const constraints = currentCallMode === 'video' ? { audio: true, video: true } : { audio: true, video: false };
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                if (currentCallMode === 'video') localVideo.srcObject = localStream;
                 localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             } catch (e) {
-                alert("Gagal akses kamera/mikrofon!"); stopCallCleanup(); return;
+                alert("Gagal mengakses perangkat media!"); stopCallCleanup(); return;
             }
 
-            pc.ontrack = event => { remoteVideo.srcObject = event.streams[0]; };
+            pc.ontrack = event => {
+                if (currentCallMode === 'video') {
+                    remoteVideo.srcObject = event.streams[0];
+                } else {
+                    remoteAudio.srcObject = event.streams[0];
+                }
+            };
 
             const callDocRef = doc(db, "calls", currentCallDocId);
             const offerCandidates = collection(callDocRef, 'offerCandidates');
@@ -706,7 +757,7 @@
                 status: 'answered'
             });
 
-            logCallToHistory('incoming', 'answered', callData.callerName);
+            logCallToHistory('incoming', currentCallMode, 'answered', callData.callerName);
             document.getElementById('active-call-status').innerText = "Terhubung";
 
             onSnapshot(offerCandidates, snapshot => {
@@ -724,7 +775,7 @@
             modalIncoming.style.display = 'none';
             if (currentCallDocId) {
                 await updateDoc(doc(db, "calls", currentCallDocId), { status: 'rejected' });
-                logCallToHistory('incoming', 'missed/rejected', document.getElementById('incoming-caller-name').innerText);
+                logCallToHistory('incoming', currentCallMode, 'missed/rejected', document.getElementById('incoming-caller-name').innerText);
             }
         });
 
@@ -743,6 +794,7 @@
             }
             if (localVideo.srcObject) localVideo.srcObject = null;
             if (remoteVideo.srcObject) remoteVideo.srcObject = null;
+            if (remoteAudio.srcObject) remoteAudio.srcObject = null;
             if (callSnapshotUnsub) { callSnapshotUnsub(); callSnapshotUnsub = null; }
             modalActive.style.display = 'none';
             modalIncoming.style.display = 'none';
