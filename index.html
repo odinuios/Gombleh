@@ -995,15 +995,16 @@
             
             loadChatRoom(id, type);
         }
-        // ================= GESTURE SWIPE KEMBALI KE MENU =================
+                // ================= GESTURE SWIPE KEMBALI KE MENU =================
         let chatSwipeStartX = 0;
         let chatSwipeCurrentX = 0;
         const chatMainArea = document.getElementById('chat-main-area');
 
         chatMainArea.addEventListener('touchstart', (e) => {
-            // Hanya aktifkan swipe kembali jika dimulai dari sisi kiri layar (margin 30px)
-            if (e.touches[0].clientX < 40 && window.innerWidth <= 768) {
+            // Perbolehkan swipe jika dimulai dari setengah sisi kiri layar (< 150px dari kiri)
+            if (e.touches[0].clientX < 150 && window.innerWidth <= 768) {
                 chatSwipeStartX = e.touches[0].clientX;
+                chatMainArea.style.transition = 'none'; // Matikan transisi saat jari bergerak
             } else {
                 chatSwipeStartX = 0;
             }
@@ -1013,24 +1014,33 @@
             if (chatSwipeStartX === 0) return;
             chatSwipeCurrentX = e.touches[0].clientX;
             let diff = chatSwipeCurrentX - chatSwipeStartX;
-            // Jika digeser ke kanan
+            // Hanya izinkan geser ke kanan (positif)
             if (diff > 0) {
-                chatMainArea.style.transform = `translateX(${diff}px)`;
+                chatMainArea.style.left = `${diff}px`;
             }
         });
 
         chatMainArea.addEventListener('touchend', () => {
             if (chatSwipeStartX === 0) return;
             let diff = chatSwipeCurrentX - chatSwipeStartX;
-            // Jika geseran ke kanan melebihi 80px, tutup ruang chat (kembali ke menu)
-            if (diff > 80) {
+            
+            // Kembalikan transisi CSS semula
+            chatMainArea.style.transition = 'left 0.3s ease';
+
+            // Jika digeser ke kanan lebih dari 70px, tutup chat
+            if (diff > 70) {
                 chatMainArea.classList.remove('active-mobile');
+                chatMainArea.style.left = ''; // Reset inline style
                 activeTargetId = null;
+            } else {
+                // Jika kurang dari 70px, pantulkan kembali ke posisi semula
+                chatMainArea.style.left = '0';
             }
-            chatMainArea.style.transform = '';
+            
             chatSwipeStartX = 0;
             chatSwipeCurrentX = 0;
         });
+
         function loadChatRoom(targetId, type) {
             if (unsubscribeChat) unsubscribeChat();
             
