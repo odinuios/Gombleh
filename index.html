@@ -253,7 +253,7 @@
     <!-- Script Firebase & Logika Aplikasi -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+       import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, where, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Konfigurasi Firebase
@@ -313,13 +313,24 @@
         });
 
         // ================= AUTHENTICATION =================
-        // Pastikan tombol login diberi event listener
+// Menangani hasil setelah proses redirect Google selesai
+        getRedirectResult(auth).then((result) => {
+            if (result) {
+                console.log("Login berhasil via Redirect");
+                // Jika berhasil, onAuthStateChanged akan otomatis berjalan
+            }
+        }).catch((error) => {
+            console.error("Error dari Redirect:", error);
+            // Abaikan error jika hanya karena user me-refresh halaman
+        });
+
         const btnLogin = document.getElementById('btn-login');
         if(btnLogin) {
             btnLogin.addEventListener('click', () => {
+                // Gunakan signInWithRedirect untuk kompabilitas WebView yang lebih baik
                 setPersistence(auth, browserLocalPersistence)
-                .then(() => signInWithPopup(auth, provider))
-                .catch(error => alert("Gagal login: " + error.message));
+                .then(() => signInWithRedirect(auth, provider))
+                .catch(error => alert("Gagal memulai login: " + error.message));
             });
         }
         
