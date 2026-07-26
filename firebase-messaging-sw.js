@@ -54,3 +54,22 @@ self.addEventListener('notificationclick', function(event) {
         })
     );
 });
+// Di dalam file service worker (misal: firebase-messaging-sw.js)
+self.addEventListener('install', (event) => {
+    self.skipWaiting(); // Langsung instal versi baru
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cache) => {
+                    // Hapus cache lama jika ada versi baru
+                    return caches.delete(cache);
+                })
+            );
+        }).then(() => {
+            self.clients.claim(); // Langsung ambil alih halaman
+        })
+    );
+});
