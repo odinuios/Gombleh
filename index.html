@@ -379,7 +379,67 @@
             bannerContainer.appendChild(banner);
             setTimeout(() => { if(bannerContainer.contains(banner)) banner.remove(); }, 4500);
         }
+// ================= PENGELOLA DERING PANGGILAN =================
+let ringtoneAudio = null;
 
+function playRingtone() {
+    try {
+        if (!ringtoneAudio) {
+            // Menggunakan audio dering standar
+            ringtoneAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            ringtoneAudio.loop = true;
+        }
+        ringtoneAudio.play().catch(e => console.log("Audio autoplay diblokir browser:", e));
+    } catch (err) {
+        console.error("Gagal memutar dering:", err);
+    }
+}
+
+function stopRingtone() {
+    if (ringtoneAudio) {
+        ringtoneAudio.pause();
+        ringtoneAudio.currentTime = 0;
+    }
+}
+
+// ================= LISTENER PANGGILAN MASUK =================
+function listenForIncomingCalls() {
+    if (!currentUser) return;
+
+    onSnapshot(query(collection(db, "calls"), where("calleeId", "==", currentUser.uid), where("status", "==", "calling")), (snapshot) => {
+        snapshot.docChanges().forEach(async (change) => {
+            if (change.type === "added") {
+                const callData = change.doc.data();
+                if (callData.callerId === currentUser.uid) return; 
+                
+                currentCallDocId = change.doc.id;
+                currentCallMode = callData.callMode || 'voice';
+                
+                document.getElementById('incoming-caller-name').innerText = callData.callerName;
+                document.getElementById('incoming-call-type').innerText = currentCallMode === 'video' ? "Panggilan Video Masuk..." : "Panggilan Suara Masuk...";
+                
+                // Tampilkan modal panggilan masuk
+                document.getElementById('incoming-call-modal').style.display = 'flex';
+                
+                // Nyalakan suara dering dan banner
+                playRingtone();
+                if (typeof showNotification === 'function') {
+                    showNotification("Panggilan Masuk", `${callData.callerName} memanggil Anda...`, 'https://via.placeholder.com/40');
+                }
+
+                // Pantau jika penelepon membatalkan panggilan
+                const unsubWatch = onSnapshot(doc(db, "calls", currentCallDocId), (ds) => {
+                    if (!ds.exists() || ds.data().status !== 'calling') {
+                        stopRingtone(); 
+                        document.getElementById('incoming-call-modal').style.display = 'none'; 
+                        unsubWatch();
+                    }
+                });
+            }
+        });
+    });
+}
+        
 // ================= PENANGANAN LAMPIRAN (FOTO, KAMERA, FILE, LOKASI) =================
 const btnAttach = document.getElementById('btn-attach');
 const attachMenu = document.getElementById('attach-menu');
@@ -1050,10 +1110,76 @@ snapshot.forEach(docSnap => {
             });
         }
 
-        document.getElementById('btn-answer-call').addEventListener('click', async () => { 
-            stopRingtone();
-            document.getElementById('incoming-call-modal').style.display = 'none';
+        // ================= PERBAIKAN TOMBOL TERIMA PANGGILAN =================
+    document.getElementById('btn-answer-call').addEventListener('click', async () => { 
+    stopRingtone();
+    document.getElementById('incoming-call-modal').style.display = 'none';
+
+    if (!currentCallDocId) return;
+
+    // Ubah status panggilan di Firestore menjadi answered
+    await updateDoc(doc(db, "calls", currentCallDocId), { status: 'answered' });
+
+    // Mulai WebRTC sebagai sisi penerima (callee)
+async function acceptIncomingCall() {
+    document.getElementById('active-call-modal').style.display = 'flex';
+    document.getElementById('active-call-status').innerText = "Menghubungkan...";
+
+    if (currentCallMode === 'video') { 
+        document.getElementById('local-video').style.display = 'block'; 
+        document.getElementById('remote-video').style.display = 'block'; 
+        document.getElementById('active-call-avatar').style.display = 'none'; 
+    } else { 
+        document.getElementById('local-video').style.display = 'none'; 
+        document.getElementById('remote-video').style.display = 'none'; 
+        document.getElementById('active-call-avatar').style.display = 'block'; 
+    }
+
+    pc = new RTCPeerConnection(servers);
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia(currentCallMode === 'video' ? { audio: true, video: true } : { audio: true, video: false });
+        if (currentCallMode === 'video') document.getElementById('local-video').srcObject = localStream;
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    } catch (e) {
+        alert("Akses media kamera/mikrofon ditolak.");
+        stopCallCleanup();
+        return;
+    }
+
+    pc.ontrack = event => { 
+        if (currentCallMode === 'video') document.getElementById('remote-video').srcObject = event.streams[0]; 
+        else document.getElementById('remote-audio').srcObject = event.streams[0]; 
+    };
+
+    const callDocRef = doc(db, "calls", currentCallDocId);
+    const offerCandidates = collection(callDocRef, 'offerCandidates'); 
+    const answerCandidates = collection(callDocRef, 'answerCandidates');
+
+    pc.onicecandidate = event => { if (event.candidate) addDoc(answerCandidates, event.candidate.toJSON()); };
+
+    const callDocSnap = await getDoc(callDocRef);
+    const callData = callDocSnap.data();
+    if (!callData) return;
+
+    await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
+    const answerDescription = await pc.createAnswer();
+    await pc.setLocalDescription(answerDescription);
+
+    await updateDoc(callDocRef, { answer: { type: answerDescription.type, sdp: answerDescription.sdp } });
+
+    onSnapshot(offerCandidates, snapshot => {
+        snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
         });
+    });
+
+    callSnapshotUnsub = onSnapshot(callDocRef, (docSnap) => {
+        const data = docSnap.data();
+        if (!data || data.status === 'ended' || data.status === 'rejected') { 
+            stopCallCleanup(); 
+        }
+    });
+}
         
         document.getElementById('btn-reject-call').addEventListener('click', async () => { 
             stopRingtone(); document.getElementById('incoming-call-modal').style.display = 'none';
