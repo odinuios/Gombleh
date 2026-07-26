@@ -25,16 +25,6 @@
             user-select: auto;
         }
 
-        /* --- HAPUS BANNER VERCEL --- */
-        #__vercel-live-feedback,
-        .vercel-live-feedback,
-        vercel-live-feedback,
-        #vercel-live-indicator {
-            display: none !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
-        }
-
         /* --- GAYA UNTUK CENTANG (TICKS) --- */
         .msg-status {
             font-size: 11px;
@@ -599,12 +589,10 @@
         }
 
         function setupChatNotificationListener(chatId, chatName, chatPhoto, type) {
-            // Flag ini berfungsi untuk mencegah notifikasi muncul saat pertama kali memuat data lama
             let isInitialLoad = true;
             onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "desc"), limit(1)), (snapshot) => {
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added') {
-                        // Hanya proses notifikasi jika ini bukan loading pertama
                         if (!isInitialLoad) {
                             const msgData = change.doc.data();
                             const targetCompareId = type === 'private' ? chatId.replace(currentUser.uid, '').replace('_', '') : chatId;
@@ -618,7 +606,6 @@
                         }
                     }
                 });
-                // Setelah load pertama selesai, ubah flag menjadi false
                 isInitialLoad = false;
             });
         }
@@ -1029,12 +1016,18 @@
                 alert("Profil berhasil diperbarui!");
             } catch (error) {
                 console.error("Gagal update profil:", error);
-                alert("Terjadi kesalahan saat menyimpan profil.");
+                alert("Gagal menyimpan profil: " + error.message);
+            } finally {
+                btn.innerText = "Simpan Profil";
+                btn.disabled = false;
             }
-            
-            btn.innerText = "Simpan Profil";
-            btn.disabled = false;
         });
+
+        // --- SCRIPT PEMBASMI BANNER VERCEL ---
+        setInterval(() => {
+            const vercelElements = document.querySelectorAll('vercel-live-feedback, #vercel-live-indicator, [id^="__vercel"]');
+            vercelElements.forEach(el => el.remove());
+        }, 1000);
     </script>
 </body>
 </html>
