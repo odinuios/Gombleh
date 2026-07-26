@@ -429,11 +429,15 @@
                 showNotification("Panggilan Masuk", `${callData.callerName} memanggil Anda...`, 'https://raw.githubusercontent.com/odinuios/Gombleh/refs/heads/main/icon.png');
                 
                 // Listener untuk memantau jika penelepon menutup/membatalkan panggilan
-                const unsubWatch = onSnapshot(doc(db, "calls", currentCallDocId), (ds) => {
-                    if (!ds.exists() || ds.data().status !== 'calling') {
-                        stopRingtone(); 
-                        document.getElementById('incoming-call-modal').style.display = 'none'; 
-                        unsubWatch();
+                const unsubWatch = onSnapshot(doc(db, "calls", currentCallDocId), async (ds) => {
+                            if (!ds.exists()) return;
+                            const status = ds.data().status;
+                            
+                            // Jika status berubah jadi rejected/ended tanpa sempat di-answer, catat missed call
+                            if (status !== 'calling' && status !== 'answered') {
+                                stopRingtone(); 
+                                document.getElementById('incoming-call-modal').style.display = 'none'; 
+                                unsubWatch();
                     }
                 });
             }
@@ -1197,21 +1201,39 @@
         });
         
         document.getElementById('btn-reject-call').addEventListener('click', async () => { 
-            stopRingtone(); document.getElementById('incoming-call-modal').style.display = 'none';
-            await updateDoc(doc(db, "calls", currentCallDocId), { status: 'rejected' });
+            stopRingtone(); 
+            document.getElementById('incoming-call-modal').style.display = 'none';
+            
+            if (currentCallDocId) {
+                const callDoc = await getDoc(doc(db, "calls", currentCallDocId));
+                if (callDoc.exists()) {
+                    const cData = callDoc.data();
+                    // Catat missed call ke chat
+                    await logMissedCallToChat(cData.callerId, cData.calleeId, cData.callMode);
+                }
+                await updateDoc(doc(db, "calls", currentCallDocId), { status: 'rejected' });
+            }
         });
         
         document.getElementById('btn-end-call').addEventListener('click', async () => { 
-    if (currentCallDocId) {
-        try {
-            await updateDoc(doc(db, "calls", currentCallDocId), { status: 'ended' });
-        } catch (e) {
-            console.error("Gagal mengupdate status call:", e);
-        }
-    }
-    stopRingtone(); // Pastikan dering ikut mati
-    stopCallCleanup(); 
-});
+            if (currentCallDocId) {
+                try {
+                    const callDoc = await getDoc(doc(db, "calls", currentCallDocId));
+                    if (callDoc.exists()) {
+                        const cData = callDoc.data();
+                        // Jika dimatikan pemanggil sebelum sempat di-answer, catat missed call
+                        if (cData.status === 'calling') {
+                            await logMissedCallToChat(cData.callerId, cData.calleeId, cData.callMode);
+                        }
+                    }
+                    await updateDoc(doc(db, "calls", currentCallDocId), { status: 'ended' });
+                } catch (e) {
+                    console.error("Gagal mengupdate status call:", e);
+                }
+            }
+            stopRingtone(); 
+            stopCallCleanup(); 
+        });
 
         function stopCallCleanup() { 
             document.getElementById('active-call-modal').style.display = 'none';
