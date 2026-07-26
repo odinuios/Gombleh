@@ -153,6 +153,46 @@
             margin-left: auto;
         }
         #btn-back-mobile { display: none; }
+        /* Container item chat agar mendukung swipe */
+.chat-item-wrapper {
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid #f2f2f2;
+}
+
+.chat-list-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: #fff;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.2s ease;
+    width: 100%;
+}
+
+.chat-list-item:hover {
+    background-color: #f5f6f6;
+}
+
+/* Tombol hapus di balik item chat saat diswipe */
+.chat-delete-action {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    background-color: #d9534f;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 90px;
+    font-weight: bold;
+    font-size: 14px;
+    z-index: 1;
+    cursor: pointer;
+}
     </style>
 </head>
 <body>
@@ -683,7 +723,7 @@
             alert("Grup berhasil dibuat!");
         });
 
-       // ================= LOAD SIDEBAR & CHAT =================
+        // ================= LOAD SIDEBAR & CHAT =================
         function loadSidebarItems() {
             chatListContainer.innerHTML = ''; contactListContainer.innerHTML = '';
             
@@ -708,15 +748,71 @@
                             document.getElementById(`chat-item-${contactData.uid}`)?.remove();
                             document.getElementById(`contact-item-${contactData.uid}`)?.remove();
 
-                            const makeItem = (idPrefix) => {
+                            // Helper untuk membuat item Kontak (tanpa swipe)
+                            const makeContactItem = (idPrefix) => {
                                 const d = document.createElement('div');
                                 d.className = 'list-item item-group'; d.id = `${idPrefix}-${contactData.uid}`;
                                 d.innerHTML = `<div class="avatar" style="background:#00a884; color:white; font-size: 20px;">👥</div><div class="info"><p class="name">${latestData.name}</p><p class="preview">Grup Chat</p></div>`;
                                 d.addEventListener('click', () => openChat(latestData.uid, latestData.name, null, 'group'));
                                 return d;
                             };
-                            contactListContainer.appendChild(makeItem('contact-item'));
-                            chatListContainer.appendChild(makeItem('chat-item'));
+
+                            // Helper untuk membuat item Chat (dengan fitur Swipe Hapus)
+                            const makeChatItem = (idPrefix) => {
+                                const wrapper = document.createElement('div');
+                                wrapper.className = 'chat-item-wrapper item-group'; 
+                                wrapper.id = `${idPrefix}-${contactData.uid}`;
+
+                                const deleteBtn = document.createElement('div');
+                                deleteBtn.className = 'chat-delete-action';
+                                deleteBtn.innerHTML = 'Hapus Chat';
+                                
+                                deleteBtn.addEventListener('click', async (e) => {
+                                    e.stopPropagation();
+                                    if (confirm(`Hapus semua riwayat chat grup ${latestData.name}?`)) {
+                                        const msgSnap = await getDocs(collection(db, "chats", chatId, "messages"));
+                                        const batchDeletes = msgSnap.docs.map(d => deleteDoc(d.ref));
+                                        await Promise.all(batchDeletes);
+                                        wrapper.remove();
+                                        if (activeTargetId === contactData.uid) {
+                                            document.getElementById('chat-active-state').style.display = 'none';
+                                            document.getElementById('chat-empty-state').style.display = 'flex';
+                                            activeTargetId = null;
+                                        }
+                                    }
+                                });
+
+                                const d = document.createElement('div');
+                                d.className = 'list-item chat-list-item';
+                                d.innerHTML = `<div class="avatar" style="background:#00a884; color:white; font-size: 20px;">👥</div><div class="info"><p class="name">${latestData.name}</p><p class="preview">Grup Chat</p></div>`;
+
+                                let startX = 0, currentX = 0, isSwiping = false;
+                                d.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; isSwiping = true; });
+                                d.addEventListener('touchmove', (e) => {
+                                    if (!isSwiping) return;
+                                    currentX = e.touches[0].clientX;
+                                    let diff = currentX - startX;
+                                    if (diff < 0 && diff > -100) d.style.transform = `translateX(${diff}px)`;
+                                });
+                                d.addEventListener('touchend', () => {
+                                    isSwiping = false;
+                                    let diff = currentX - startX;
+                                    d.style.transform = (diff < -50) ? `translateX(-90px)` : `translateX(0px)`;
+                                    startX = 0; currentX = 0;
+                                });
+
+                                d.addEventListener('click', () => {
+                                    d.style.transform = `translateX(0px)`;
+                                    openChat(latestData.uid, latestData.name, null, 'group');
+                                });
+
+                                wrapper.appendChild(deleteBtn);
+                                wrapper.appendChild(d);
+                                return wrapper;
+                            };
+
+                            contactListContainer.appendChild(makeContactItem('contact-item'));
+                            chatListContainer.appendChild(makeChatItem('chat-item'));
                         });
                     } else {
                         onSnapshot(doc(db, "users", contactData.uid), (userDoc) => {
@@ -743,7 +839,8 @@
                                 }
                             });
 
-                            const makeItem = (idPrefix) => {
+                            // Helper untuk membuat item Kontak (tanpa swipe)
+                            const makeContactItem = (idPrefix) => {
                                 const d = document.createElement('div');
                                 d.className = 'list-item item-private'; d.id = `${idPrefix}-${contactData.uid}`;
                                 d.innerHTML = `
@@ -752,18 +849,80 @@
                                         <p class="name">${latestData.name || 'User'}</p>
                                         <p class="preview">${latestData.email || ''}</p>
                                     </div>
-                                    <span class="badge-chat-count" id="unread-badge-${contactData.uid}" style="background:#00a884; color:white; border-radius:50%; padding:2px 6px; font-size:11px; font-weight:bold; display:none; margin-left:auto;">0</span>
                                 `;
                                 d.addEventListener('click', () => openChat(latestData.uid, latestData.name, latestData.photoURL, 'private'));
                                 return d;
                             };
-                            contactListContainer.appendChild(makeItem('contact-item'));
-                            chatListContainer.appendChild(makeItem('chat-item'));
+
+                            // Helper untuk membuat item Chat (dengan fitur Swipe Hapus)
+                            const makeChatItem = (idPrefix) => {
+                                const wrapper = document.createElement('div');
+                                wrapper.className = 'chat-item-wrapper item-private'; 
+                                wrapper.id = `${idPrefix}-${contactData.uid}`;
+
+                                const deleteBtn = document.createElement('div');
+                                deleteBtn.className = 'chat-delete-action';
+                                deleteBtn.innerHTML = 'Hapus Chat';
+                                
+                                deleteBtn.addEventListener('click', async (e) => {
+                                    e.stopPropagation();
+                                    if (confirm(`Hapus semua riwayat chat dengan ${latestData.name || 'User'}?`)) {
+                                        const msgSnap = await getDocs(collection(db, "chats", chatId, "messages"));
+                                        const batchDeletes = msgSnap.docs.map(d => deleteDoc(d.ref));
+                                        await Promise.all(batchDeletes);
+                                        wrapper.remove();
+                                        if (activeTargetId === latestData.uid) {
+                                            document.getElementById('chat-active-state').style.display = 'none';
+                                            document.getElementById('chat-empty-state').style.display = 'flex';
+                                            activeTargetId = null;
+                                        }
+                                    }
+                                });
+
+                                const d = document.createElement('div');
+                                d.className = 'list-item chat-list-item';
+                                d.innerHTML = `
+                                    <img src="${latestData.photoURL || 'https://via.placeholder.com/45'}" class="avatar">
+                                    <div class="info">
+                                        <p class="name">${latestData.name || 'User'}</p>
+                                        <p class="preview">${latestData.email || ''}</p>
+                                    </div>
+                                    <span class="badge-chat-count" id="unread-badge-${contactData.uid}" style="background:#00a884; color:white; border-radius:50%; padding:2px 6px; font-size:11px; font-weight:bold; display:none; margin-left:auto;">0</span>
+                                `;
+
+                                let startX = 0, currentX = 0, isSwiping = false;
+                                d.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; isSwiping = true; });
+                                d.addEventListener('touchmove', (e) => {
+                                    if (!isSwiping) return;
+                                    currentX = e.touches[0].clientX;
+                                    let diff = currentX - startX;
+                                    if (diff < 0 && diff > -100) d.style.transform = `translateX(${diff}px)`;
+                                });
+                                d.addEventListener('touchend', () => {
+                                    isSwiping = false;
+                                    let diff = currentX - startX;
+                                    d.style.transform = (diff < -50) ? `translateX(-90px)` : `translateX(0px)`;
+                                    startX = 0; currentX = 0;
+                                });
+
+                                d.addEventListener('click', () => {
+                                    d.style.transform = `translateX(0px)`;
+                                    openChat(latestData.uid, latestData.name, latestData.photoURL, 'private');
+                                });
+
+                                wrapper.appendChild(deleteBtn);
+                                wrapper.appendChild(d);
+                                return wrapper;
+                            };
+
+                            contactListContainer.appendChild(makeContactItem('contact-item'));
+                            chatListContainer.appendChild(makeChatItem('chat-item'));
                         });
                     }
                 });
             });
         }
+        
         function setupChatNotificationListener(chatId, chatName, chatPhoto, type) {
             let isInitialLoad = true;
             onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "desc"), limit(1)), (snapshot) => {
