@@ -442,7 +442,7 @@
             } catch (error) { alert("Gagal membuat grup."); }
         });
 
-        function loadSidebarItems() {
+function loadSidebarItems() {
             chatListContainer.innerHTML = '';
             contactListContainer.innerHTML = '';
             
@@ -450,16 +450,32 @@
             onSnapshot(contactsRef, (snapshot) => {
                 document.querySelectorAll('.item-private').forEach(el => el.remove());
                 snapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    const createItem = () => {
+                    const contactData = docSnap.data();
+                    
+                    // Ambil data terbaru langsung dari dokumen user utama agar nama/foto selalu sinkron
+                    onSnapshot(doc(db, "users", contactData.uid), (userDoc) => {
+                        const latestData = userDoc.exists() ? userDoc.data() : contactData;
+                        
+                        // Hapus elemen lama jika ada untuk mencegah duplikasi saat update real-time
+                        const existingEl = document.getElementById(`contact-${contactData.uid}`);
+                        if (existingEl) existingEl.remove();
+
                         const div = document.createElement('div');
                         div.className = 'list-item item-private';
-                        div.innerHTML = `<img src="${data.photoURL || 'https://via.placeholder.com/45'}" class="avatar"><div class="info"><p class="name">${data.name}</p><p class="preview">${data.email}</p></div>`;
-                        div.addEventListener('click', () => openChat(data.uid, data.name, data.photoURL, 'private'));
-                        return div;
-                    };
-                    contactListContainer.appendChild(createItem());
-                    chatListContainer.appendChild(createItem());
+                        div.id = `contact-${contactData.uid}`;
+                        div.innerHTML = `
+                            <img src="${latestData.photoURL || 'https://via.placeholder.com/45'}" class="avatar">
+                            <div class="info">
+                                <p class="name">${latestData.name || contactData.name}</p>
+                                <p class="preview">${latestData.email || contactData.email}</p>
+                            </div>
+                        `;
+                        div.addEventListener('click', () => openChat(latestData.uid, latestData.name, latestData.photoURL, 'private'));
+                        
+                        contactListContainer.appendChild(div);
+                        chatListContainer.appendChild(div.cloneNode(true)); // Untuk disinkronkan ke tab chat juga
+                        // (Opsional: Anda bisa memisahkan container chat dan kontak jika ingin render mandiri, namun cara ini langsung memperbarui keduanya)
+                    });
                 });
             });
 
