@@ -1,75 +1,66 @@
-// file: firebase-messaging-sw.js
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
+importScripts("https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js");
 
-const firebaseConfig = {
-    apiKey: "AIzaSyCx4_E64FBUDyo4RzDDWMLklRlZMvMUlFM",
-    authDomain: "gombleh-9dea6.firebaseapp.com",
-    projectId: "gombleh-9dea6",
-    storageBucket: "gombleh-9dea6.firebasestorage.app",
-    messagingSenderId: "1034286098492",
-    appId: "1:1034286098492:web:87c81098f5ad465e187b39"
-};
+// Masukkan konfigurasi Firebase-mu di sini
+firebase.initializeApp({
+  apiKey: "AIzaSyCx4_E64FBUDyo4RzDDWMLklRlZMvMUlFM",
+  authDomain: "gombleh-9dea6.firebaseapp.com",
+  projectId: "gombleh-9dea6",
+  storageBucket: "gombleh-9dea6.firebasestorage.app",
+  messagingSenderId: "1034286098492",
+  appId: "1:1034286098492:web:87c81098f5ad465e187b39"
+});
 
-firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-    console.log('[firebase-messaging-sw.js] Menerima pesan background ', payload);
-    
-    // Konfigurasi Default
-    let notificationTitle = payload.data?.title || 'Pesan Baru Gibah';
-    let notificationOptions = {
-        body: payload.data?.body || 'Anda mendapat pemberitahuan baru.',
-        icon: 'https://raw.githubusercontent.com/odinuios/Gombleh/refs/heads/main/icon.png',
-        vibrate: [200, 100, 200], // Getar standar
-        requireInteraction: false // Notifikasi bisa hilang sendiri
+  console.log("Menerima pesan di background: ", payload);
+
+  const data = payload.data || {};
+  
+  // Jika ini adalah event panggilan, gunakan pengaturan prioritas tertinggi (Native Web Push approach)
+  if (data.type === 'call') {
+    const notificationTitle = `Panggilan Masuk dari ${data.callerName}`;
+    const notificationOptions = {
+      body: data.callMode === 'video' ? 'Video Call Masuk...' : 'Panggilan Suara Masuk...',
+      icon: '/icon.png', // Ganti dengan URL icon kamu
+      vibrate: [200, 100, 200, 100, 200, 100, 200],
+      requireInteraction: true, // Notifikasi tidak akan hilang sendiri
+      actions: [
+        { action: 'answer', title: 'Jawab' },
+        { action: 'reject', title: 'Tolak' }
+      ],
+      data: {
+        url: '/',
+        callId: data.callId
+      }
     };
 
-    // Jika ini adalah panggilan telepon (Call)
-    if (payload.data?.type === 'call') {
-        notificationTitle = `📞 Panggilan dari ${payload.data.callerName}`;
-        notificationOptions.body = 'Ketuk untuk menjawab panggilan...';
-        notificationOptions.vibrate = [500, 1000, 500, 1000, 500, 1000]; // Getar panjang berulang
-        notificationOptions.requireInteraction = true; // Notifikasi tidak hilang sampai diklik
-        notificationOptions.tag = 'incoming_call'; // Agar notifikasi panggilan tidak menumpuk
-    }
+    return self.registration.showNotification(notificationTitle, notificationOptions);
+  }
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+  // Notifikasi pesan/invite biasa
+  const notificationTitle = payload.notification?.title || "Pesan Baru";
+  const notificationOptions = {
+    body: payload.notification?.body || "Anda mendapat pesan baru.",
+    icon: '/icon.png'
+  };
+
+  return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// Event ketika notifikasi di-klik di background
+// Menangkap event klik dari aksi tombol pada notifikasi Push
 self.addEventListener('notificationclick', function(event) {
-    event.notification.close();
-    event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
-            if (clientList.length > 0) {
-                let client = clientList[0];
-                for (let i = 0; i < clientList.length; i++) {
-                    if (clientList[i].focused) client = clientList[i];
-                }
-                return client.focus();
-            }
-            return clients.openWindow('/'); // Sesuaikan dengan URL root aplikasi Anda
-        })
-    );
-});
-// Di dalam file service worker (misal: firebase-messaging-sw.js)
-self.addEventListener('install', (event) => {
-    self.skipWaiting(); // Langsung instal versi baru
-});
+  event.notification.close();
 
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cache) => {
-                    // Hapus cache lama jika ada versi baru
-                    return caches.delete(cache);
-                })
-            );
-        }).then(() => {
-            self.clients.claim(); // Langsung ambil alih halaman
-        })
-    );
+  if (event.action === 'answer') {
+    // Arahkan user ke halaman web/PWA untuk otomatis menjawab
+    event.waitUntil(clients.openWindow('/?action=answer&callId=' + event.notification.data.callId));
+  } else if (event.action === 'reject') {
+    // (Opsional) Lakukan request ke backend / Firebase Function untuk mengupdate status di firestore
+    console.log('Panggilan ditolak.');
+  } else {
+    // Klik area badan notifikasi biasa
+    event.waitUntil(clients.openWindow(event.notification.data.url || '/'));
+  }
 });
