@@ -66,7 +66,7 @@
 
         /* Layar Chat Aktif */
         #chat-active-state { display: none; flex-direction: column; height: 100%; width: 100%; background-color: #efeae2; }
-        .header-actions { margin-left: auto; display: none; } /* Hanya muncul untuk chat pribadi */
+        .header-actions { margin-left: auto; display: none; }
 
         .chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: contain; }
         
@@ -121,11 +121,8 @@
 
     <!-- Aplikasi Utama -->
     <div id="app-container" class="app-container hidden">
-        
-        <!-- Sidebar (Kiri) / Navigasi -->
         <div class="sidebar">
             <div class="tab-content-area">
-                
                 <!-- TAB 1: CHATS -->
                 <div id="tab-chats" class="tab-pane active">
                     <div class="header">
@@ -157,9 +154,7 @@
                     <div class="header">
                         <span style="font-size: 20px; font-weight: bold;">Panggilan</span>
                     </div>
-                    <div class="list-container" id="call-history-container">
-                        <!-- Riwayat Panggilan -->
-                    </div>
+                    <div class="list-container" id="call-history-container"></div>
                 </div>
 
                 <!-- TAB 4: PROFIL -->
@@ -199,8 +194,6 @@
 
         <!-- Ruang Obrolan (Kanan) -->
         <div class="chat-main" id="chat-main-area">
-            
-            <!-- BLANK STATE: Muncul saat awal -->
             <div id="chat-empty-state">
                 <span style="font-size: 80px; color:#d1d7db; margin-bottom: 20px;">💬</span>
                 <h1>Mau gibah ama sapa nih?</h1>
@@ -208,13 +201,10 @@
                 <p>Pilih kontak atau grup untuk memulai.</p>
             </div>
 
-            <!-- CHAT AKTIF: Muncul setelah diklik -->
             <div id="chat-active-state">
                 <div class="header">
                     <button id="btn-back-mobile">←</button>
                     <div id="chat-main-header" style="display: flex; align-items: center; gap: 10px;"></div>
-                    
-                    <!-- Menu Panggilan (Hanya untuk chat pribadi) -->
                     <div class="header-actions" id="chat-header-actions">
                         <button class="action-btn" id="btn-start-call" title="Telepon Suara">📞</button>
                     </div>
@@ -255,10 +245,9 @@
     <!-- Script Firebase & Logika Aplikasi -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-       import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, where, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Konfigurasi Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCx4_E64FBUDyo4RzDDWMLklRlZMvMUlFM",
             authDomain: "gombleh-9dea6.firebaseapp.com",
@@ -281,6 +270,8 @@
         let activeTargetName = null;
         let activeTargetType = 'private'; 
         let unsubscribeChat = null;
+
+        // Pendaftaran Service Worker untuk PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./service-worker.js')
@@ -288,24 +279,8 @@
                     .catch(err => console.error('Pendaftaran Service Worker gagal:', err));
             });
         }
-        getRedirectResult(auth).then((result) => {
-            if (result) {
-                console.log("Login berhasil via Redirect");
-            }
-        }).catch((error) => {
-            console.error("Error dari Redirect:", error);
-        });
 
-        const btnLogin = document.getElementById('btn-login');
-        if(btnLogin) {
-            btnLogin.addEventListener('click', () => {
-                setPersistence(auth, browserLocalPersistence)
-                .then(() => signInWithRedirect(auth, provider))
-                .catch(error => alert("Gagal memulai login: " + error.message));
-            });
-        }
-
-        // Mendapatkan elemen DOM (Pastikan ID di HTML sama)
+        // Elemen DOM
         const loginScreen = document.getElementById('login-screen');
         const appContainer = document.getElementById('app-container');
         const chatListContainer = document.getElementById('chat-list-container');
@@ -319,7 +294,7 @@
         const inputMessage = document.getElementById('message-input');
         const chatMainArea = document.getElementById('chat-main-area');
 
-        // ==== LOGIKA TAB NAVIGASI ====
+        // Navigasi Tab
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabPanes = document.querySelectorAll('.tab-pane');
         
@@ -332,30 +307,17 @@
             });
         });
 
-        // Tombol Kembali di Tampilan Mobile
         document.getElementById('btn-back-mobile').addEventListener('click', () => {
             chatMainArea.classList.remove('active-mobile');
         });
 
-        // ================= AUTHENTICATION =================
-// Menangani hasil setelah proses redirect Google selesai
-        getRedirectResult(auth).then((result) => {
-            if (result) {
-                console.log("Login berhasil via Redirect");
-                // Jika berhasil, onAuthStateChanged akan otomatis berjalan
-            }
-        }).catch((error) => {
-            console.error("Error dari Redirect:", error);
-            // Abaikan error jika hanya karena user me-refresh halaman
-        });
-
+        // ================= AUTHENTICATION (Menggunakan Popup yang stabil untuk TWA) =================
         const btnLogin = document.getElementById('btn-login');
         if(btnLogin) {
             btnLogin.addEventListener('click', () => {
-                // Gunakan signInWithRedirect untuk kompabilitas WebView yang lebih baik
                 setPersistence(auth, browserLocalPersistence)
-                .then(() => signInWithRedirect(auth, provider))
-                .catch(error => alert("Gagal memulai login: " + error.message));
+                .then(() => signInWithPopup(auth, provider))
+                .catch(error => alert("Gagal login: " + error.message));
             });
         }
         
@@ -572,7 +534,6 @@
         
         inputMessage.addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btn-send').click(); });
 
-        // Kirim File via Cloudinary
         const btnAttach = document.getElementById('btn-attach');
         const fileInput = document.getElementById('file-input');
         btnAttach.addEventListener('click', () => fileInput.click());
@@ -602,8 +563,7 @@
             fileInput.value = '';
         });
 
-
-        // ================= WEBRTC PANGGILAN SUARA (SIGNALING FIRESTORE) =================
+        // ================= WEBRTC PANGGILAN SUARA =================
         const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }] };
         let pc = null;
         let localStream = null;
