@@ -723,7 +723,7 @@
             alert("Grup berhasil dibuat!");
         });
 
-        // ================= LOAD SIDEBAR & CHAT =================
+// ================= LOAD SIDEBAR & CHAT =================
         function loadSidebarItems() {
             chatListContainer.innerHTML = ''; contactListContainer.innerHTML = '';
             
@@ -748,6 +748,20 @@
                             document.getElementById(`chat-item-${contactData.uid}`)?.remove();
                             document.getElementById(`contact-item-${contactData.uid}`)?.remove();
 
+                            // Listener tambahan untuk menghitung pesan grup belum dibaca
+                            onSnapshot(query(collection(db, "chats", chatId, "messages"), where("senderId", "!=", currentUser.uid), where("status", "!=", "read")), (msgSnap) => {
+                                const unreadCount = msgSnap.size;
+                                const badgeEl = document.getElementById(`unread-badge-${contactData.uid}`);
+                                if (badgeEl) {
+                                    if (unreadCount > 0) {
+                                        badgeEl.style.display = 'inline-block';
+                                        badgeEl.innerText = unreadCount;
+                                    } else {
+                                        badgeEl.style.display = 'none';
+                                    }
+                                }
+                            });
+
                             // Helper untuk membuat item Kontak (tanpa swipe)
                             const makeContactItem = (idPrefix) => {
                                 const d = document.createElement('div');
@@ -757,7 +771,7 @@
                                 return d;
                             };
 
-                            // Helper untuk membuat item Chat (dengan fitur Swipe Hapus)
+                            // Helper untuk membuat item Chat (dengan fitur Swipe Hapus & Badge Unread)
                             const makeChatItem = (idPrefix) => {
                                 const wrapper = document.createElement('div');
                                 wrapper.className = 'chat-item-wrapper item-group'; 
@@ -784,7 +798,14 @@
 
                                 const d = document.createElement('div');
                                 d.className = 'list-item chat-list-item';
-                                d.innerHTML = `<div class="avatar" style="background:#00a884; color:white; font-size: 20px;">👥</div><div class="info"><p class="name">${latestData.name}</p><p class="preview">Grup Chat</p></div>`;
+                                d.innerHTML = `
+                                    <div class="avatar" style="background:#00a884; color:white; font-size: 20px;">👥</div>
+                                    <div class="info">
+                                        <p class="name">${latestData.name}</p>
+                                        <p class="preview">Grup Chat</p>
+                                    </div>
+                                    <span class="badge-chat-count" id="unread-badge-${contactData.uid}" style="background:#00a884; color:white; border-radius:50%; padding:2px 6px; font-size:11px; font-weight:bold; display:none; margin-left:auto;">0</span>
+                                `;
 
                                 let startX = 0, currentX = 0, isSwiping = false;
                                 d.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; isSwiping = true; });
@@ -825,7 +846,7 @@
                             document.getElementById(`chat-item-${contactData.uid}`)?.remove();
                             document.getElementById(`contact-item-${contactData.uid}`)?.remove();
 
-                            // Listener tambahan untuk menghitung pesan belum dibaca
+                            // Listener tambahan untuk menghitung pesan belum dibaca (hanya pesan yang ditujukan ke kita dan belum 'read')
                             onSnapshot(query(collection(db, "chats", chatId, "messages"), where("senderId", "==", latestData.uid), where("status", "!=", "read")), (msgSnap) => {
                                 const unreadCount = msgSnap.size;
                                 const badgeEl = document.getElementById(`unread-badge-${contactData.uid}`);
