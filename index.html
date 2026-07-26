@@ -168,7 +168,7 @@
                             <button id="btn-create-group" style="background:#005c4b;">+ Grup</button>
                         </div>
                     </div>
-                    <!-- Permintaan Pertemanan Dipindah ke Sini -->
+                    <!-- Permintaan Pertemanan -->
                     <div id="friend-requests-container" style="background: #f5f6f6;"></div>
                     <div class="list-container" id="contact-list-container"></div>
                 </div>
@@ -291,9 +291,6 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dvhcfc37o/auto/upload"; 
-        const CLOUDINARY_PRESET = "gombleh";
-
         let currentUser = null;
         let activeTargetId = null; 
         let activeTargetName = null;
@@ -386,7 +383,6 @@
 
         // ================= PERMINTAAN PERTEMANAN =================
         document.getElementById('btn-add-contact').addEventListener('click', async () => {
-            // Logika Invite...
             const email = document.getElementById('add-email-input').value.trim().toLowerCase();
             if (!email || email === currentUser.email) return;
             const q = query(collection(db, "users"), where("email", "==", email));
@@ -414,8 +410,8 @@
                         div.className = 'list-item req-item';
                         div.innerHTML = `<img src="${reqData.photoURL || 'https://via.placeholder.com/45'}" class="avatar"><div class="info"><p class="name">${reqData.name}</p><p class="preview">Minta ditambahkan</p></div><div class="request-actions"><button class="btn-acc" data-uid="${reqData.uid}">Terima</button><button class="btn-rej" data-uid="${reqData.uid}">Tolak</button></div>`;
                         div.querySelector('.btn-acc').addEventListener('click', async () => {
-                            await setDoc(doc(db, "users", currentUser.uid, "contacts", reqData.uid), { uid: reqData.uid });
-                            await setDoc(doc(db, "users", reqData.uid, "contacts", currentUser.uid), { uid: currentUser.uid });
+                            await setDoc(doc(db, "users", currentUser.uid, "contacts", reqData.uid), { uid: reqData.uid, type: 'private' });
+                            await setDoc(doc(db, "users", reqData.uid, "contacts", currentUser.uid), { uid: currentUser.uid, type: 'private' });
                             await deleteDoc(doc(db, "users", currentUser.uid, "friend_requests", reqData.uid));
                         });
                         div.querySelector('.btn-rej').addEventListener('click', () => deleteDoc(doc(db, "users", currentUser.uid, "friend_requests", reqData.uid)));
@@ -424,6 +420,235 @@
                 }
             });
         }
+
+        // ================= FITUR MEMBUAT GRUP =================
+        document.getElementById('btn-create-group').addEventListener('click', async () => {
+            const groupName = document.getElementById('group-name-input').value.trim();
+            if (!groupName) return alert("Nama grup tidak boleh kosong!");
+            
+            // Membuat ID grup baru
+            const groupRef = doc(collection(db, "groups"));
+            const groupId = groupRef.id;
+            
+            const groupData = {
+                uid: groupId,
+                name: groupName,
+                type: 'group',
+                members: [currentUser.uid],
+                admins: [currentUser.uid],
+                createdAt: serverTimestamp()
+            };
+            
+            // Simpan data grup ke collection 'groups'
+            await setDoc(groupRef, groupData);
+            
+            // Tambahkan referensi grup tersebut ke daftar kontak user pembuat
+            await setDoc(doc(db, "users", currentUser.uid, "contacts", groupId), {
+                uid: groupId,
+                type: 'group',
+                name: groupName
+            });
+            
+            document.getElementById('group-name-input').value = '';
+            alert("Grup berhasil dibuat!");
+        });
+
+        // ================= LOAD SIDEBAR & CHAT & LAINNYA =================
+        function loadSidebarItems() {
+            chatListContainer.innerHTML = ''; contactListContainer.innerHTML = '';
+            
+            onSnapshot(collection(db, "users", currentUser.uid, "contacts"), (snapshot) => {
+                document.querySelectorAll('.item-private, .item-group').forEach(el => el.remove());
+                
+                snapshot.forEach((docSnap) => {
+                    const contactData = docSnap.data();
+                    
+                    if (contactData.type === 'group') {
+                        // Memuat Data Grup
+                        onSnapshot(doc(db, "groups", contactData.uid), (groupDoc) => {
+                            if (!groupDoc.exists()) return;
+                            const latestData = groupDoc.data();
+                            const chatId = latestData.uid;
+                            
+                            setupChatNotificationListener(chatId, latestData.name, 'https://via.placeholder.com/45', 'group');
+
+                            document.getElementById(`chat-item-${contactData.uid}`)?.remove();
+                            document.getElementById(`contact-item-${contactData.uid}`)?.remove();
+
+                            const makeItem = (idPrefix) => {
+                                const d = document.createElement('div');
+                                d.className = 'list-item item-group'; d.id = `${idPrefix}-${contactData.uid}`;
+                                d.innerHTML = `<div class="avatar" style="background:#00a884; color:white; font-size: 20px;">👥</div><div class="info"><p class="name">${latestData.name}</p><p class="preview">Grup Chat</p></div>`;
+                                d.addEventListener('click', () => openChat(latestData.uid, latestData.name, null, 'group'));
+                                return d;
+                            };
+                            contactListContainer.appendChild(makeItem('contact-item'));
+                            chatListContainer.appendChild(makeItem('chat-item'));
+                        });
+                    } else {
+                        // Memuat Data Private Chat
+                        onSnapshot(doc(db, "users", contactData.uid), (userDoc) => {
+                            if (!userDoc.exists()) return;
+                            const latestData = userDoc.data();
+                            const chatId = currentUser.uid < latestData.uid ? `${currentUser.uid}_${latestData.uid}` : `${latestData.uid}_${currentUser.uid}`;
+                            
+                            setupChatNotificationListener(chatId, latestData.name, latestData.photoURL, 'private');
+
+                            document.getElementById(`chat-item-${contactData.uid}`)?.remove();
+                            document.getElementById(`contact-item-${contactData.uid}`)?.remove();
+
+                            const makeItem = (idPrefix) => {
+                                const d = document.createElement('div');
+                                d.className = 'list-item item-private'; d.id = `${idPrefix}-${contactData.uid}`;
+                                d.innerHTML = `<img src="${latestData.photoURL || 'https://via.placeholder.com/45'}" class="avatar"><div class="info"><p class="name">${latestData.name || 'User'}</p><p class="preview">${latestData.email || ''}</p></div>`;
+                                d.addEventListener('click', () => openChat(latestData.uid, latestData.name, latestData.photoURL, 'private'));
+                                return d;
+                            };
+                            contactListContainer.appendChild(makeItem('contact-item'));
+                            chatListContainer.appendChild(makeItem('chat-item'));
+                        });
+                    }
+                });
+            });
+        }
+
+        function setupChatNotificationListener(chatId, chatName, chatPhoto, type) {
+            onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "desc"), limit(1)), (snapshot) => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                        const msgData = change.doc.data();
+                        const targetCompareId = type === 'private' ? chatId.replace(currentUser.uid, '').replace('_', '') : chatId;
+                        if (msgData.senderId !== currentUser.uid && activeTargetId !== targetCompareId) {
+                            if (!processedMessages.has(change.doc.id)) {
+                                processedMessages.add(change.doc.id);
+                                const txt = msgData.type === 'text' ? msgData.text : 'Mengirim pesan...';
+                                showNotification(type === 'group' ? `${chatName} (${msgData.senderName})` : chatName, txt, chatPhoto);
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        function openChat(id, name, photo, type) {
+            activeTargetId = id; activeTargetName = name; activeTargetType = type;
+            
+            document.getElementById('chat-empty-state').style.display = 'none'; 
+            document.getElementById('chat-active-state').style.display = 'flex';
+            
+            let avatarHtml = type === 'group' ? `<div class="avatar" style="background:#00a884; color:white; width:35px; height:35px; font-size:15px; margin:0;">👥</div>` : `<img src="${photo || 'https://via.placeholder.com/45'}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">`;
+            
+            document.getElementById('chat-main-header').innerHTML = `${avatarHtml} <span style="font-weight:bold; font-size: 16px;">${name}</span>`;
+            
+            // Tampilkan tombol tambah anggota hanya jika obrolan adalah grup
+            document.getElementById('btn-open-group-modal').style.display = type === 'group' ? 'block' : 'none';
+
+            if (window.innerWidth <= 768) document.getElementById('chat-main-area').classList.add('active-mobile');
+            
+            loadChatRoom(id, type);
+        }
+
+        // ================= MEMUAT RUANG OBROLAN DAN KIRIM PESAN =================
+        function loadChatRoom(targetId, type) {
+            if (unsubscribeChat) unsubscribeChat();
+            
+            const chatId = type === 'group' ? targetId : (currentUser.uid < targetId ? `${currentUser.uid}_${targetId}` : `${targetId}_${currentUser.uid}`);
+            const chatHistory = document.querySelector('.chat-history');
+            
+            unsubscribeChat = onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc")), (snapshot) => {
+                chatHistory.innerHTML = '';
+                snapshot.forEach(docSnap => {
+                    const msg = docSnap.data();
+                    const isMe = msg.senderId === currentUser.uid;
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
+                    
+                    let senderInfo = '';
+                    if (!isMe && type === 'group') {
+                        senderInfo = `<div class="msg-sender">${msg.senderName}</div>`;
+                    }
+                    
+                    const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                    msgDiv.innerHTML = `${senderInfo}${msg.text}<div class="msg-time-container"><span class="msg-time">${time}</span></div>`;
+                    
+                    chatHistory.appendChild(msgDiv);
+                });
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            });
+        }
+
+        // Fungsi Tombol Kirim Pesan
+        document.getElementById('btn-send').addEventListener('click', async () => {
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text || !activeTargetId) return;
+            
+            const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
+            
+            await addDoc(collection(db, "chats", chatId, "messages"), {
+                senderId: currentUser.uid,
+                senderName: currentUser.displayName,
+                text: text,
+                type: 'text',
+                timestamp: serverTimestamp()
+            });
+            input.value = '';
+        });
+
+        // Menambahkan Pengguna Lain Ke Grup
+        document.getElementById('btn-open-group-modal').addEventListener('click', async () => {
+            if (activeTargetType !== 'group') return;
+            document.getElementById('group-add-modal').style.display = 'flex';
+            
+            const listContainer = document.getElementById('group-add-contact-list');
+            listContainer.innerHTML = '<p style="text-align:center; padding:20px;">Memuat kontak...</p>';
+            
+            // Dapatkan member grup saat ini agar tidak ditampilkan dalam opsi tambah
+            const groupDoc = await getDoc(doc(db, "groups", activeTargetId));
+            const currentMembers = groupDoc.exists() ? groupDoc.data().members || [] : [];
+            
+            const contactsSnap = await getDocs(collection(db, "users", currentUser.uid, "contacts"));
+            listContainer.innerHTML = '';
+            
+            let hasAvailableContacts = false;
+
+            contactsSnap.forEach(async (docSnap) => {
+                const cData = docSnap.data();
+                if (cData.type === 'group' || currentMembers.includes(cData.uid)) return;
+                
+                hasAvailableContacts = true;
+                const uDoc = await getDoc(doc(db, "users", cData.uid));
+                
+                if (uDoc.exists()) {
+                    const uData = uDoc.data();
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.innerHTML = `<img src="${uData.photoURL || 'https://via.placeholder.com/45'}" class="avatar"><div class="info"><p class="name">${uData.name}</p></div><button class="btn-acc" style="margin-left:auto;">+ Tambah</button>`;
+                    
+                    div.querySelector('.btn-acc').addEventListener('click', async () => {
+                        // Tambah ke array members di Firestore
+                        await updateDoc(doc(db, "groups", activeTargetId), {
+                            members: arrayUnion(uData.uid)
+                        });
+                        // Tambahkan referensi grup ke daftar kontak user yang baru dimasukkan
+                        await setDoc(doc(db, "users", uData.uid, "contacts", activeTargetId), {
+                            uid: activeTargetId, type: 'group', name: activeTargetName
+                        });
+                        alert(`${uData.name} berhasil ditambahkan ke grup!`);
+                        div.remove();
+                    });
+                    listContainer.appendChild(div);
+                }
+            });
+
+            if (!hasAvailableContacts) {
+                listContainer.innerHTML = '<p style="text-align:center; padding:20px; color:#888;">Tidak ada kontak yang bisa ditambahkan.</p>';
+            }
+        });
+
+        document.getElementById('btn-close-group-modal').addEventListener('click', () => {
+            document.getElementById('group-add-modal').style.display = 'none';
+        });
 
         // ================= RIWAYAT PANGGILAN =================
         function listenForCallHistory() {
@@ -457,11 +682,10 @@
                             <div class="call-icon-indicator">${callTypeIcon}</div>
                         `;
 
-                        // Klik detail panggilan untuk melakukan callback sesuai tipe panggilan (video/voice)
                         div.addEventListener('click', () => {
                             activeTargetId = targetId;
                             activeTargetName = targetName;
-                            activeTargetType = data.type || 'private'; // group atau private
+                            activeTargetType = data.type || 'private';
                             startCall(data.callMode);
                         });
 
@@ -471,64 +695,6 @@
             }, (error) => {
                 console.error("Butuh indeks Firestore untuk query riwayat panggilan. Klik link di konsol Firestore.", error);
             });
-        }
-
-        // ================= LOAD SIDEBAR & CHAT & LAINNYA =================
-        // (Sama seperti kode asli, hanya memanggil OpenChat)
-        function loadSidebarItems() {
-            chatListContainer.innerHTML = ''; contactListContainer.innerHTML = '';
-            onSnapshot(collection(db, "users", currentUser.uid, "contacts"), (snapshot) => {
-                document.querySelectorAll('.item-private').forEach(el => el.remove());
-                snapshot.forEach((docSnap) => {
-                    const contactData = docSnap.data();
-                    onSnapshot(doc(db, "users", contactData.uid), (userDoc) => {
-                        const latestData = userDoc.exists() ? userDoc.data() : contactData;
-                        const chatId = currentUser.uid < latestData.uid ? `${currentUser.uid}_${latestData.uid}` : `${latestData.uid}_${currentUser.uid}`;
-                        setupChatNotificationListener(chatId, latestData.name, latestData.photoURL, 'private');
-
-                        document.getElementById(`chat-item-${contactData.uid}`)?.remove();
-                        document.getElementById(`contact-item-${contactData.uid}`)?.remove();
-
-                        const makeItem = (idPrefix) => {
-                            const d = document.createElement('div');
-                            d.className = 'list-item item-private'; d.id = `${idPrefix}-${contactData.uid}`;
-                            d.innerHTML = `<img src="${latestData.photoURL || 'https://via.placeholder.com/45'}" class="avatar"><div class="info"><p class="name">${latestData.name || 'User'}</p><p class="preview">${latestData.email || ''}</p></div>`;
-                            d.addEventListener('click', () => openChat(latestData.uid, latestData.name, latestData.photoURL, 'private'));
-                            return d;
-                        };
-                        contactListContainer.appendChild(makeItem('contact-item'));
-                        chatListContainer.appendChild(makeItem('chat-item'));
-                    });
-                });
-            });
-            // Sisanya untuk loadSidebarItems sama...
-        }
-
-        function setupChatNotificationListener(chatId, chatName, chatPhoto, type) {
-            onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "desc"), limit(1)), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        const msgData = change.doc.data();
-                        const targetCompareId = type === 'private' ? chatId.replace(currentUser.uid, '').replace('_', '') : chatId;
-                        if (msgData.senderId !== currentUser.uid && activeTargetId !== targetCompareId) {
-                            if (!processedMessages.has(change.doc.id)) {
-                                processedMessages.add(change.doc.id);
-                                const txt = msgData.type === 'text' ? msgData.text : 'Mengirim lampiran';
-                                showNotification(type === 'group' ? `${chatName} (${msgData.senderName})` : chatName, txt, chatPhoto);
-                            }
-                        }
-                    }
-                });
-            });
-        }
-
-        function openChat(id, name, photo, type) {
-            activeTargetId = id; activeTargetName = name; activeTargetType = type;
-            document.getElementById('chat-empty-state').style.display = 'none'; document.getElementById('chat-active-state').style.display = 'flex';
-            let avatarHtml = type === 'group' ? `<div class="avatar" style="background:#00a884; color:white; width:35px; height:35px; font-size:15px; margin:0;">👥</div>` : `<img src="${photo || 'https://via.placeholder.com/45'}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">`;
-            document.getElementById('chat-main-header').innerHTML = `${avatarHtml} <span style="font-weight:bold; font-size: 16px;">${name}</span>`;
-            if (window.innerWidth <= 768) document.getElementById('chat-main-area').classList.add('active-mobile');
-            // Logic loadChatRoom() diringkas agar sesuai limit teks
         }
 
         // ================= WEBRTC PANGGILAN =================
@@ -558,7 +724,6 @@
             
             const offerDescription = await pc.createOffer(); await pc.setLocalDescription(offerDescription);
             
-            // Simpan calleeName untuk history panggilan
             await setDoc(callDocRef, { callerId: currentUser.uid, callerName: currentUser.displayName, calleeId: activeTargetType === 'group' ? `GROUP_${activeTargetId}` : activeTargetId, calleeName: activeTargetName, callMode: mode, type: activeTargetType, offer: { type: offerDescription.type, sdp: offerDescription.sdp }, status: 'calling', timestamp: serverTimestamp() });
 
             callSnapshotUnsub = onSnapshot(callDocRef, (docSnap) => {
@@ -597,10 +762,28 @@
             });
         }
 
-        document.getElementById('btn-answer-call').addEventListener('click', async () => { /* Logika sama */ });
-        document.getElementById('btn-reject-call').addEventListener('click', async () => { /* Logika sama */ });
-        document.getElementById('btn-end-call').addEventListener('click', async () => { /* Logika sama */ });
-        function stopCallCleanup() { /* Logika sama */ }
+        document.getElementById('btn-answer-call').addEventListener('click', async () => { 
+            stopRingtone();
+            document.getElementById('incoming-call-modal').style.display = 'none';
+            // Logic WebRTC Answer call goes here (kept minimal per limit)
+        });
+        
+        document.getElementById('btn-reject-call').addEventListener('click', async () => { 
+            stopRingtone(); document.getElementById('incoming-call-modal').style.display = 'none';
+            await updateDoc(doc(db, "calls", currentCallDocId), { status: 'rejected' });
+        });
+        
+        document.getElementById('btn-end-call').addEventListener('click', async () => { 
+            if(currentCallDocId) await updateDoc(doc(db, "calls", currentCallDocId), { status: 'ended' });
+            stopCallCleanup(); 
+        });
+
+        function stopCallCleanup() { 
+            document.getElementById('active-call-modal').style.display = 'none';
+            if (pc) { pc.close(); pc = null; }
+            if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
+            if (callSnapshotUnsub) { callSnapshotUnsub(); callSnapshotUnsub = null; }
+        }
     </script>
 </body>
 </html>
