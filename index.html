@@ -13,7 +13,7 @@
         .btn-google { background: #4285F4; color: white; border: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: bold; margin-top: 20px; margin-left: auto; margin-right: auto; }
         .hidden { display: none !important; }
 
-        /* Container Utama - Perbaikan UI agar flexbox penuh */
+        /* Container Utama */
         .app-container { display: flex; width: 100%; max-width: 1400px; height: 100vh; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2); margin: 0 auto; }
         
         /* Sidebar (Kiri) */
@@ -31,7 +31,7 @@
         .chat-name { font-weight: 500; font-size: 16px; margin: 0 0 3px 0; color: #111b21; }
         .chat-preview { font-size: 13px; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
 
-        /* Ruang Obrolan (Kanan) - Perbaikan agar melebar maksimal */
+        /* Ruang Obrolan (Kanan) */
         .chat-main { flex: 1 1 auto; display: flex; flex-direction: column; background-color: #efeae2; width: 100%; overflow: hidden; }
         .chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: contain; }
         
@@ -42,8 +42,8 @@
         .msg-time { font-size: 11px; color: #667781; float: right; margin: 6px 0 -4px 10px; }
         
         /* Media dalam Pesan */
-        .message img { max-width: 100%; border-radius: 5px; cursor: pointer; }
-        .message audio { max-width: 200px; height: 35px; outline: none; }
+        .message img { max-width: 100%; border-radius: 5px; cursor: pointer; margin-bottom: 5px; }
+        .message audio { max-width: 200px; height: 35px; outline: none; margin-bottom: 5px; }
         .message a { color: #027eb5; text-decoration: none; font-weight: bold; }
 
         /* Area Input */
@@ -58,7 +58,7 @@
         .btn-send { background-color: #00a884; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
         @media (max-width: 768px) {
-            .sidebar { display: none; } /* Tampilan Mobile disembunyikan sementara */
+            .sidebar { display: none; } 
             .app-container { height: 100vh; }
         }
     </style>
@@ -85,7 +85,7 @@
             <div class="header" id="my-profile-header">Memuat...</div>
             
             <div class="add-contact-box">
-                <input type="email" id="add-email-input" placeholder="Tambah email teman...">
+                <input type="email" id="add-email-input" placeholder="Tambah email teman..." autocomplete="off">
                 <button id="btn-add-contact">Tambah</button>
             </div>
 
@@ -101,7 +101,7 @@
             
             <div class="chat-input-area">
                 <!-- Input File Tersembunyi -->
-                <input type="file" id="file-input" style="display: none;" accept="image/*, .pdf, .doc, .docx, .xls, .xlsx">
+                <input type="file" id="file-input" style="display: none;" accept="image/*, .pdf, .doc, .docx, .xls, .xlsx, .zip">
                 
                 <!-- Tombol Lampiran & Lokasi -->
                 <button class="action-btn" id="btn-attach" title="Kirim File/Foto">📎</button>
@@ -119,13 +119,12 @@
 
     <!-- Script Firebase -->
     <script type="module">
-        // 1. IMPORT LENGKAP (Auth, Firestore, dan Storage)
+        // 1. IMPORT FIREBASE (Tanpa Storage)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-        // 2. KONFIGURASI FIREBASE
+        // 2. KONFIGURASI FIREBASE (Dari Akun Anda)
         const firebaseConfig = {
             apiKey: "AIzaSyCx4_E64FBUDyo4RzDDWMLklRlZMvMUlFM",
             authDomain: "gombleh-9dea6.firebaseapp.com",
@@ -139,9 +138,14 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const storage = getStorage(app);
         const provider = new GoogleAuthProvider();
 
+        // ================= PENGATURAN CLOUDINARY =================
+        // PERHATIAN: Ganti NAMA_CLOUD_ANDA dengan Cloud Name dari dashboard Cloudinary Anda
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/jgcuvsst/auto/upload"; 
+        const CLOUDINARY_PRESET = "gombleh"; // Preset yang sudah Anda tentukan
+
+        // Variabel Global
         let currentUser = null;
         let currentRecipientUid = null;
         let unsubscribeChat = null;
@@ -172,7 +176,7 @@
                     ${user.displayName}
                 `;
 
-                // Update Data Global
+                // Update Data Global di Firestore
                 await setDoc(doc(db, "users", user.uid), {
                     uid: user.uid, name: user.displayName, email: user.email, photoURL: user.photoURL
                 }, { merge: true });
@@ -213,7 +217,7 @@
             onSnapshot(myContactsRef, (snapshot) => {
                 chatList.innerHTML = ''; 
                 if (snapshot.empty) {
-                    chatList.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px; font-size:13px;">Belum ada kontak. Tambahkan via email.</p>';
+                    chatList.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px; font-size:13px;">Belum ada kontak. Tambahkan via email di atas.</p>';
                     return;
                 }
 
@@ -258,12 +262,13 @@
                     
                     const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '...';
                     
-                    let content = data.text;
+                    let content = '';
                     
                     // Render berdasarkan tipe pesan
-                    if (data.type === 'image') content = `<img src="${data.url}" onclick="window.open('${data.url}', '_blank')">`;
-                    else if (data.type === 'file') content = `📄 <a href="${data.url}" target="_blank">Unduh File (${data.fileName})</a>`;
-                    else if (data.type === 'location') content = `📍 <a href="https://www.google.com/maps/search/?api=1&query=${data.lat},${data.lng}" target="_blank">Lihat Lokasi Saya di Peta</a>`;
+                    if (data.type === 'text') content = data.text;
+                    else if (data.type === 'image') content = `<img src="${data.url}" onclick="window.open('${data.url}', '_blank')"><br>${data.text}`;
+                    else if (data.type === 'file') content = `📄 <a href="${data.url}" target="_blank">Unduh File (${data.fileName})</a><br>${data.text}`;
+                    else if (data.type === 'location') content = `📍 <a href="https://www.google.com/maps/search/?api=1&query=${data.lat},${data.lng}" target="_blank">Lihat Lokasi di Peta</a>`;
                     else if (data.type === 'audio') content = `<audio controls src="${data.url}"></audio>`;
 
                     div.innerHTML = `${content} <span class="msg-time">${time}</span>`;
@@ -275,7 +280,7 @@
 
         // Fungsi Induk Pengirim Pesan
         async function sendMessageToDb(payload) {
-            if (!currentRecipientUid) return alert("Pilih kontak dulu!");
+            if (!currentRecipientUid) return alert("Pilih kontak terlebih dahulu!");
             const chatId = getChatId(currentUser.uid, currentRecipientUid);
             try {
                 await addDoc(collection(db, "chats", chatId, "messages"), {
@@ -299,7 +304,7 @@
         });
         inputMessage.addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btn-send').click(); });
 
-        // 2. Kirim File & Foto
+        // 2. Kirim File & Foto (Via Cloudinary)
         const btnAttach = document.getElementById('btn-attach');
         const fileInput = document.getElementById('file-input');
         
@@ -309,26 +314,37 @@
             const file = e.target.files[0];
             if (!file) return;
             
-            btnAttach.style.opacity = '0.5'; // Indikator proses
+            btnAttach.style.opacity = '0.5'; // Indikator sedang proses
             try {
-                // Upload ke Firebase Storage
-                const fileRef = ref(storage, `uploads/${Date.now()}_${file.name}`);
-                await uploadBytes(fileRef, file);
-                const url = await getDownloadURL(fileRef);
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_PRESET);
+
+                const response = await fetch(CLOUDINARY_URL, {
+                    method: 'POST',
+                    body: formData
+                });
                 
-                // Tentukan tipe
-                const type = file.type.startsWith('image/') ? 'image' : 'file';
-                await sendMessageToDb({ type: type, url: url, fileName: file.name, text: '' });
+                const data = await response.json();
+                
+                if (data.secure_url) {
+                    const type = file.type.startsWith('image/') ? 'image' : 'file';
+                    await sendMessageToDb({ type: type, url: data.secure_url, fileName: file.name, text: '' });
+                } else {
+                    throw new Error("Gagal mendapatkan URL dari Cloudinary");
+                }
             } catch (error) {
-                alert("Gagal mengunggah file.");
+                console.error(error);
+                alert("Gagal mengunggah file. Pastikan pengaturan Cloudinary sudah benar.");
             }
             btnAttach.style.opacity = '1';
-            fileInput.value = ''; // Reset
+            fileInput.value = ''; // Reset input
         });
 
         // 3. Kirim Lokasi (GPS)
         document.getElementById('btn-location').addEventListener('click', () => {
-            if (!navigator.geolocation) return alert("Browser tidak mendukung GPS.");
+            if (!currentRecipientUid) return alert("Pilih kontak terlebih dahulu!");
+            if (!navigator.geolocation) return alert("Browser Anda tidak mendukung fitur GPS.");
             
             navigator.geolocation.getCurrentPosition((position) => {
                 sendMessageToDb({ 
@@ -338,21 +354,20 @@
                     text: '' 
                 });
             }, () => {
-                alert("Gagal mengambil lokasi. Pastikan izin lokasi aktif.");
+                alert("Gagal mengambil lokasi. Pastikan Anda memberikan izin akses lokasi.");
             });
         });
 
-        // 4. Rekam Pesan Suara (Voice Note)
+        // 4. Rekam Pesan Suara (Voice Note via Cloudinary)
         const btnMic = document.getElementById('btn-mic');
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
 
         btnMic.addEventListener('click', async () => {
-            if (!currentRecipientUid) return alert("Pilih kontak dulu!");
+            if (!currentRecipientUid) return alert("Pilih kontak terlebih dahulu!");
 
             if (!isRecording) {
-                // Mulai Merekam
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     mediaRecorder = new MediaRecorder(stream);
@@ -362,25 +377,39 @@
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                         audioChunks = [];
                         
-                        // Upload Audio ke Storage
-                        const audioRef = ref(storage, `audio/${Date.now()}.webm`);
-                        await uploadBytes(audioRef, audioBlob);
-                        const url = await getDownloadURL(audioRef);
+                        btnMic.style.opacity = '0.5'; // Indikator sedang upload
                         
-                        await sendMessageToDb({ type: 'audio', url: url, text: '' });
+                        const formData = new FormData();
+                        formData.append('file', audioBlob);
+                        formData.append('upload_preset', CLOUDINARY_PRESET);
+                        formData.append('resource_type', 'auto'); 
+
+                        try {
+                            const response = await fetch(CLOUDINARY_URL, {
+                                method: 'POST',
+                                body: formData
+                            });
+                            const data = await response.json();
+                            
+                            if (data.secure_url) {
+                                await sendMessageToDb({ type: 'audio', url: data.secure_url, text: '' });
+                            }
+                        } catch (err) {
+                            console.error(err);
+                            alert("Gagal mengirim pesan suara.");
+                        }
                         
-                        // Matikan mic
+                        btnMic.style.opacity = '1';
                         stream.getTracks().forEach(track => track.stop());
                     };
 
                     mediaRecorder.start();
                     isRecording = true;
-                    btnMic.classList.add('recording'); // Efek kedap-kedip merah
+                    btnMic.classList.add('recording'); 
                 } catch (err) {
-                    alert("Gagal mengakses mikrofon.");
+                    alert("Gagal mengakses mikrofon. Pastikan Anda telah memberikan izin.");
                 }
             } else {
-                // Berhenti Merekam & Kirim
                 mediaRecorder.stop();
                 isRecording = false;
                 btnMic.classList.remove('recording');
