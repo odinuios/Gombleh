@@ -30,7 +30,7 @@
         .hidden { display: none !important; }
 
         /*tambah teman dan grup */
-        .fab-container { position: relative; display: inline-block; }
+        .fab-container { position: absolute; right: 20px; bottom: 80px; display: inline-block; z-index: 100; }
         .dropdown-menu { display: none; position: absolute; right: 0; bottom: 50px; background-color: #fff; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 10; border-radius: 5px; width: 160px; overflow: hidden; }
         .dropdown-menu.show { display: block; }
         .dropdown-item { padding: 12px 16px; display: block; text-decoration: none; color: #333; font-size: 14px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
@@ -42,8 +42,8 @@
         /* Sidebar & Header */
         .sidebar { flex: 0 0 30%; min-width: 320px; border-right: 1px solid #d1d7db; display: flex; flex-direction: column; background: #fff; position: relative; height: 100%; overflow: hidden; }
         .header { height: 60px; background-color: #f0f2f5; display: flex; align-items: center; padding: 0 15px; font-weight: 600; color: #41525d; border-bottom: 1px solid #ddd; flex-shrink: 0; }
-        .tab-content-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; height: calc(100% - 60px); }
-        .tab-pane { display: none; flex-direction: column; height: 100%; }
+        .tab-content-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; height: calc(100% - 60px); position: relative; }
+        .tab-pane { display: none; flex-direction: column; height: 100%; position: relative; }
         .tab-pane.active { display: flex; }
 
         .menu-box { padding: 15px; background: #fff; border-bottom: 1px solid #ddd; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
@@ -167,16 +167,7 @@
 
                 <div id="tab-contacts" class="tab-pane">
                     <div class="header"><span style="font-size: 20px; font-weight: bold;">Kontak</span></div>
-                    <div class="menu-box" style="align-items: flex-end;">
-                        <div class="fab-container">
-                            <button id="btn-main-plus" style="background: #00a884; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; font-weight: bold;">+</button>
-                            <div id="dropdown-action-menu" class="dropdown-menu">
-                                <button class="dropdown-item" id="menu-add-friend">Tambah Teman</button>
-                                <button class="dropdown-item" id="menu-add-group">Buat Grup</button>
-                            </div>
-                        </div>
-                    </div>
-
+                    
                     <!-- Input tersembunyi yang akan muncul saat salah satu menu dipilih -->
                     <div id="input-container-friend" class="menu-box hidden" style="background: #f9f9f9;">
                         <div class="menu-row">
@@ -194,6 +185,15 @@
                     <!-- Permintaan Pertemanan -->
                     <div id="friend-requests-container" style="background: #f5f6f6;"></div>
                     <div class="list-container" id="contact-list-container"></div>
+
+                    <!-- Tombol FAB dipindahkan ke kanan bawah -->
+                    <div class="fab-container">
+                        <button id="btn-main-plus" style="background: #00a884; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">+</button>
+                        <div id="dropdown-action-menu" class="dropdown-menu">
+                            <button class="dropdown-item" id="menu-add-friend">Tambah Teman</button>
+                            <button class="dropdown-item" id="menu-add-group">Buat Grup</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="tab-calls" class="tab-pane">
