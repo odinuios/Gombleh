@@ -400,38 +400,36 @@
 
         // ================= LISTENER PANGGILAN MASUK =================
         function listenForIncomingCalls() {
-            if (!currentUser) return;
+    if (!currentUser) return;
 
-            onSnapshot(query(collection(db, "calls"), where("calleeId", "==", currentUser.uid), where("status", "==", "calling")), (snapshot) => {
-                snapshot.docChanges().forEach(async (change) => {
-                    if (change.type === "added") {
-                        const callData = change.doc.data();
-                        if (callData.callerId === currentUser.uid) return; 
-                        
-                        currentCallDocId = change.doc.id;
-                        currentCallMode = callData.callMode || 'voice';
-                        
-                        document.getElementById('incoming-caller-name').innerText = callData.callerName;
-                        document.getElementById('incoming-call-type').innerText = currentCallMode === 'video' ? "Panggilan Video Masuk..." : "Panggilan Suara Masuk...";
-                        
-                        document.getElementById('incoming-call-modal').style.display = 'flex';
-                        
-                        playRingtone();
-                        if (typeof showNotification === 'function') {
-                            showNotification("Panggilan Masuk", `${callData.callerName} memanggil Anda...`, 'https://via.placeholder.com/40');
-                        }
+    onSnapshot(query(collection(db, "calls"), where("calleeId", "==", currentUser.uid), where("status", "==", "calling")), (snapshot) => {
+        snapshot.docChanges().forEach(async (change) => {
+            if (change.type === "added") {
+                const callData = change.doc.data();
+                if (callData.callerId === currentUser.uid) return; 
+                
+                currentCallDocId = change.doc.id;
+                currentCallMode = callData.callMode || 'voice';
+                
+                document.getElementById('incoming-caller-name').innerText = callData.callerName;
+                document.getElementById('incoming-call-type').innerText = currentCallMode === 'video' ? "Panggilan Video Masuk..." : "Panggilan Suara Masuk...";
+                document.getElementById('incoming-call-modal').style.display = 'flex';
+                
+                playRingtone();
+                showNotification("Panggilan Masuk", `${callData.callerName} memanggil Anda...`, 'https://via.placeholder.com/40');
 
-                        const unsubWatch = onSnapshot(doc(db, "calls", currentCallDocId), (ds) => {
-                            if (!ds.exists() || ds.data().status !== 'calling') {
-                                stopRingtone(); 
-                                document.getElementById('incoming-call-modal').style.display = 'none'; 
-                                unsubWatch();
-                            }
-                        });
+                // Listener untuk memantau jika penelepon menutup/membatalkan panggilan
+                const unsubWatch = onSnapshot(doc(db, "calls", currentCallDocId), (ds) => {
+                    if (!ds.exists() || ds.data().status !== 'calling') {
+                        stopRingtone(); 
+                        document.getElementById('incoming-call-modal').style.display = 'none'; 
+                        unsubWatch();
                     }
                 });
-            });
-        }
+            }
+        });
+    });
+}
         
         // ================= PENANGANAN LAMPIRAN (FOTO, KAMERA, FILE, LOKASI) =================
         const btnAttach = document.getElementById('btn-attach');
@@ -671,7 +669,7 @@
             alert("Grup berhasil dibuat!");
         });
 
-        // ================= LOAD SIDEBAR & CHAT =================
+       // ================= LOAD SIDEBAR & CHAT =================
         function loadSidebarItems() {
             chatListContainer.innerHTML = ''; contactListContainer.innerHTML = '';
             
@@ -717,10 +715,31 @@
                             document.getElementById(`chat-item-${contactData.uid}`)?.remove();
                             document.getElementById(`contact-item-${contactData.uid}`)?.remove();
 
+                            // Listener tambahan untuk menghitung pesan belum dibaca
+                            onSnapshot(query(collection(db, "chats", chatId, "messages"), where("senderId", "==", latestData.uid), where("status", "!=", "read")), (msgSnap) => {
+                                const unreadCount = msgSnap.size;
+                                const badgeEl = document.getElementById(`unread-badge-${contactData.uid}`);
+                                if (badgeEl) {
+                                    if (unreadCount > 0) {
+                                        badgeEl.style.display = 'inline-block';
+                                        badgeEl.innerText = unreadCount;
+                                    } else {
+                                        badgeEl.style.display = 'none';
+                                    }
+                                }
+                            });
+
                             const makeItem = (idPrefix) => {
                                 const d = document.createElement('div');
                                 d.className = 'list-item item-private'; d.id = `${idPrefix}-${contactData.uid}`;
-                                d.innerHTML = `<img src="${latestData.photoURL || 'https://via.placeholder.com/45'}" class="avatar"><div class="info"><p class="name">${latestData.name || 'User'}</p><p class="preview">${latestData.email || ''}</p></div>`;
+                                d.innerHTML = `
+                                    <img src="${latestData.photoURL || 'https://via.placeholder.com/45'}" class="avatar">
+                                    <div class="info">
+                                        <p class="name">${latestData.name || 'User'}</p>
+                                        <p class="preview">${latestData.email || ''}</p>
+                                    </div>
+                                    <span class="badge-chat-count" id="unread-badge-${contactData.uid}" style="background:#00a884; color:white; border-radius:50%; padding:2px 6px; font-size:11px; font-weight:bold; display:none; margin-left:auto;">0</span>
+                                `;
                                 d.addEventListener('click', () => openChat(latestData.uid, latestData.name, latestData.photoURL, 'private'));
                                 return d;
                             };
@@ -731,7 +750,6 @@
                 });
             });
         }
-
         function setupChatNotificationListener(chatId, chatName, chatPhoto, type) {
             let isInitialLoad = true;
             onSnapshot(query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "desc"), limit(1)), (snapshot) => {
@@ -1152,9 +1170,16 @@
         });
         
         document.getElementById('btn-end-call').addEventListener('click', async () => { 
-            if(currentCallDocId) await updateDoc(doc(db, "calls", currentCallDocId), { status: 'ended' });
-            stopCallCleanup(); 
-        });
+    if (currentCallDocId) {
+        try {
+            await updateDoc(doc(db, "calls", currentCallDocId), { status: 'ended' });
+        } catch (e) {
+            console.error("Gagal mengupdate status call:", e);
+        }
+    }
+    stopRingtone(); // Pastikan dering ikut mati
+    stopCallCleanup(); 
+});
 
         function stopCallCleanup() { 
             document.getElementById('active-call-modal').style.display = 'none';
