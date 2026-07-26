@@ -975,7 +975,9 @@
                     const msg = docSnap.data();
                     const isMe = msg.senderId === currentUser.uid;
                     
-                    if (!isMe && msg.status !== 'read') {
+                    // HAPUS update status otomatis dari sini agar tidak berubah jadi read sendiri.
+                    // Status 'read' hanya di-update jika user sedang membuka chat room ini secara aktif.
+                    if (!isMe && msg.status !== 'read' && activeTargetId === targetId) {
                         updateDoc(docSnap.ref, { status: 'read' });
                     }
 
@@ -998,9 +1000,7 @@
 
                     let contentHtml = '';
                     if (msg.type === 'image') {
-                        contentHtml = `
-                            <img src="${msg.fileUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; cursor: pointer; display: block;" 
-                                 onclick="window.open('${msg.fileUrl}', '_blank')" alt="Foto">`;
+                        contentHtml = `<img src="${msg.fileUrl}" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px; cursor: pointer; display: block;" onclick="window.open('${msg.fileUrl}', '_blank')" alt="Foto">`;
                     } 
                     else if (msg.type === 'file') {
                         contentHtml = `
@@ -1019,18 +1019,14 @@
                                 </a>
                             </div>`;
                     } 
-                        else if (msg.type === 'missed_call') {
-                            contentHtml = `
-                                <div style="color: #d9534f; font-weight: 500; display: flex; align-items: center; gap: 5px;">
-                                ${msg.text}
-                                </div>`;
+                    else if (msg.type === 'missed_call') {
+                        contentHtml = `<div style="color: #d9534f; font-weight: 500; display: flex; align-items: center; gap: 5px;">${msg.text}</div>`;
                     }
                     else {
                         contentHtml = `<span style="white-space: pre-wrap; word-break: break-word;">${msg.text}</span>`;
                     }
 
                     msgDiv.innerHTML = `${senderInfo}${contentHtml}<div class="msg-time-container"><span class="msg-time">${time}</span>${tickHtml}</div>`;
-                    
                     chatHistory.appendChild(msgDiv);
                 });
                 chatHistory.scrollTop = chatHistory.scrollHeight;
