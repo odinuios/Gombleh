@@ -425,7 +425,7 @@ fileInput.addEventListener('change', async (e) => {
             const messaging = getMessaging(app);
             // Masukkan Web Push Certificate (VAPID Key) dari Firebase Project Settings > Cloud Messaging
             const token = await getToken(messaging, { 
-                vapidKey: "MASUKKAN_VAPID_KEY_FIREBASE_ANDA_DISINI" 
+                vapidKey: "BK1FltIiH95S8vYRIYSdAsXu-PCDq6V2BmH0nHr6rOzU_AyJT_mXA3ToyVjylQ-y40aoouSxAfNxiiZJYOaEr-o" 
             });
             if (token) {
                 await setDoc(doc(db, "users", currentUser.uid), { fcmToken: token }, { merge: true });
