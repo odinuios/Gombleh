@@ -354,7 +354,7 @@
     <!-- Layar Login dan Register -->
     <div id="login-screen">
         <div class="login-box">
-            <img src="https://raw.githubusercontent.com/odinuios/Gombleh/refs/heads/main/icon.png" alt="Logo Gibah" class="login-logo">
+            <img src="https://raw.githubusercontent.com/odinuios/Gombleh/refs/heads/main/icon.png" alt="Logo Gibah" class="login-logo" onerror="this.src='https://ui-avatars.com/api/?name=Gibah&background=00a884&color=fff&size=128'">
             <h2>Gibah Dolo Yok</h2>
             
             <!-- Login Form -->
@@ -412,7 +412,7 @@
                     <div class="header"><span style="font-size: 20px; font-weight: bold;">Status</span></div>
                     <div style="padding:15px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; gap:15px; background: var(--bg-sidebar);">
                         <div id="my-status-click-area" style="position:relative; cursor:pointer; display:flex; align-items:center; flex:1;">
-                            <img src="https://via.placeholder.com/45" id="my-status-avatar-preview" class="avatar" style="margin:0;">
+                            <img src="https://via.placeholder.com/45" id="my-status-avatar-preview" class="avatar" style="margin:0;" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'">
                             <div style="flex:1; margin-left:5px;"><p class="name">Status Saya</p><p class="preview" id="my-status-desc">Ketuk untuk melihat status</p></div>
                         </div>
                         <div id="btn-trigger-add-status" style="background:#CAFFBF; color:#333; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: 0.2s;" title="Buat Status Baru">
@@ -445,7 +445,7 @@
                         <!-- Card Profil -->
                         <div style="background: var(--bg-sidebar); padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid var(--border-color);">
                             <input type="file" id="profile-photo-input" style="display: none;" accept="image/*">
-                            <img src="https://via.placeholder.com/120" id="profile-avatar-preview" class="profile-avatar" title="Klik ganti foto" style="border-color: #B28DFF;">
+                            <img src="https://via.placeholder.com/120" id="profile-avatar-preview" class="profile-avatar" title="Klik ganti foto" style="border-color: #B28DFF;" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'">
                             <p style="font-size: 12px; color: var(--text-preview); margin-top: -5px;">(Klik foto untuk mengubah)</p>
                             <div class="menu-row" style="margin-top: 15px;"><input type="text" id="profile-name-input" placeholder="Nama Tampilan" class="modal-input" style="text-align: center; border-radius: 20px;"></div>
                             <button id="btn-save-profile" class="profile-btn" style="background: #B28DFF; border-radius: 20px;">Simpan Profil</button>
@@ -579,7 +579,7 @@
 
     <!-- Modals Panggilan Masuk -->
     <div id="incoming-call-modal" class="call-modal">
-        <img src="https://via.placeholder.com/100" id="incoming-caller-avatar" class="call-avatar">
+        <img src="https://via.placeholder.com/100" id="incoming-caller-avatar" class="call-avatar" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'">
         <h2 id="incoming-caller-name">Seseorang</h2>
         <p id="incoming-call-type" style="color: #ccc;">Memanggil...</p>
         <div class="call-actions">
@@ -595,7 +595,7 @@
         <audio id="remote-audio" autoplay></audio>
         
         <div style="z-index: 3; position: relative; margin-top: auto; margin-bottom: 30px; display: flex; flex-direction: column; align-items: center; width: 100%;">
-            <img src="https://via.placeholder.com/100" id="active-call-avatar" class="call-avatar" style="display:none; animation:none;">
+            <img src="https://via.placeholder.com/100" id="active-call-avatar" class="call-avatar" style="display:none; animation:none;" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'">
             <h2 id="active-call-name" style="margin-bottom: 5px;">Nama</h2>
             <p id="active-call-status" style="margin-bottom: 15px; font-weight: bold; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px;">Memanggil...</p>
             <div class="call-actions">
@@ -650,12 +650,13 @@
         function stopRingtone() { if (ringtoneAudio) { ringtoneAudio.pause(); ringtoneAudio.currentTime = 0; } }
 
         const bannerContainer = document.getElementById('banner-container');
-        function showNotification(title, body, photo = 'https://via.placeholder.com/40') {
+        function showNotification(title, body, photo = '') {
             playNotif();
-            if (Notification.permission === 'granted' && document.hidden) { new Notification(title, { body: body, icon: photo }); }
+            const fallbackPhoto = photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(title)}&background=random&color=fff&size=128`;
+            if (Notification.permission === 'granted' && document.hidden) { new Notification(title, { body: body, icon: fallbackPhoto }); }
             const banner = document.createElement('div');
             banner.className = 'in-app-banner';
-            banner.innerHTML = `<img src="${photo}"><div class="b-info"><h4>${title}</h4><p>${body}</p></div>`;
+            banner.innerHTML = `<img src="${fallbackPhoto}" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'"><div class="b-info"><h4>${title}</h4><p>${body}</p></div>`;
             banner.addEventListener('click', () => banner.remove());
             bannerContainer.appendChild(banner);
             setTimeout(() => { if(bannerContainer.contains(banner)) banner.remove(); }, 4500);
@@ -730,7 +731,8 @@
             const uDoc = await getDoc(doc(db, "users", uid));
             if (!uDoc.exists()) return;
             const uData = uDoc.data();
-            document.getElementById('up-avatar').src = uData.photoURL || 'https://via.placeholder.com/100';
+            const fallbackAvatar = uData.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(uData.name || 'User')}&background=random&color=fff&size=128`;
+            document.getElementById('up-avatar').src = fallbackAvatar;
             document.getElementById('up-name').innerText = uData.name;
             document.getElementById('up-email').innerText = uData.email;
             document.getElementById('user-profile-modal').style.display = 'flex';
@@ -770,7 +772,9 @@
                                 currentCallDocId = change.doc.id;
                                 currentCallMode = callData.callMode || 'voice';
                                 
-                                const avatarSrc = callData.type === 'group' ? (callData.groupPhoto || 'https://via.placeholder.com/100') : (callData.callerPhoto || 'https://via.placeholder.com/100');
+                                const rawAvatar = callData.type === 'group' ? (callData.groupPhoto || '') : (callData.callerPhoto || '');
+                                const avatarSrc = rawAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(callData.callerName || 'User')}&background=random&color=fff&size=128`;
+                                
                                 document.getElementById('incoming-caller-avatar').src = avatarSrc;
                                 document.getElementById('incoming-caller-name').innerText = callData.type === 'group' ? `${callData.groupName}\n(${callData.callerName})` : callData.callerName;
                                 document.getElementById('incoming-call-type').innerText = currentCallMode === 'video' ? "📹 Panggilan Video Masuk..." : "📞 Panggilan Suara Masuk...";
@@ -926,7 +930,7 @@
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
                 
-                // Set default avatar otomatis dari nama pendaftar
+                // Set default avatar otomatis dari email/nama pendaftar agar tidak broken
                 const defaultPhoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=128`;
                 
                 await updateProfile(userCredential.user, { displayName: name, photoURL: defaultPhoto });
@@ -950,11 +954,15 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user; loginScreen.classList.add('hidden'); appContainer.classList.remove('hidden');
-                document.getElementById('profile-avatar-preview').src = user.photoURL || 'https://via.placeholder.com/120';
-                document.getElementById('my-status-avatar-preview').src = user.photoURL || 'https://via.placeholder.com/45';
+                
+                // Pastikan foto profil default menggunakan email/nama jika kosong atau broken
+                const fallbackPhoto = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&background=random&color=fff&size=128`;
+                
+                document.getElementById('profile-avatar-preview').src = fallbackPhoto;
+                document.getElementById('my-status-avatar-preview').src = fallbackPhoto;
                 document.getElementById('profile-name-input').value = user.displayName || '';
                 
-                await setDoc(doc(db, "users", user.uid), { uid: user.uid, name: user.displayName, email: user.email, photoURL: user.photoURL }, { merge: true });
+                await setDoc(doc(db, "users", user.uid), { uid: user.uid, name: user.displayName, email: user.email, photoURL: fallbackPhoto }, { merge: true });
                 
                 requestNotificationPermission(); loadSidebarItems(); listenForIncomingCalls(); listenForFriendRequests(); listenForCallHistory(); loadPersonalStickers(); loadSavedWallpaper(); loadSavedTheme(); listenForStatuses();
             } else { currentUser = null; loginScreen.classList.remove('hidden'); appContainer.classList.add('hidden'); }
@@ -1015,10 +1023,12 @@
                     type = mediaFile.type.startsWith('video/') ? 'video' : 'image';
                 }
 
+                const fallbackStatusPhoto = currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName || 'User')}&background=random&color=fff&size=128`;
+
                 await addDoc(collection(db, "statuses"), {
                     uid: currentUser.uid,
                     name: currentUser.displayName,
-                    photoURL: currentUser.photoURL,
+                    photoURL: fallbackStatusPhoto,
                     text: text,
                     mediaUrl: mediaUrl,
                     type: type,
@@ -1067,10 +1077,11 @@
                             const sList = userStatuses[uid];
                             const latest = sList[0];
                             const timeStr = latest.timestamp ? new Date(latest.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Baru saja';
+                            const fallbackFeedPhoto = latest.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(latest.name || 'User')}&background=random&color=fff&size=128`;
                             
                             const div = document.createElement('div');
                             div.className = 'list-item status-item-feed';
-                            div.innerHTML = `<img src="${latest.photoURL || 'https://via.placeholder.com/45'}" class="avatar status-ring"><div class="info"><p class="name">${latest.name}</p><p class="preview">${timeStr}</p></div>`;
+                            div.innerHTML = `<img src="${fallbackFeedPhoto}" class="avatar status-ring" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'"><div class="info"><p class="name">${latest.name}</p><p class="preview">${timeStr}</p></div>`;
                             
                             div.addEventListener('click', () => openStatusViewer(sList));
                             statusFeed.appendChild(div);
@@ -1125,7 +1136,8 @@
             
             const st = currentStatusList[currentStatusIndex];
             document.getElementById('vs-name').innerText = st.name;
-            document.getElementById('vs-avatar').src = st.photoURL || 'https://via.placeholder.com/40';
+            const fallbackStatusAvatar = st.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(st.name || 'User')}&background=random&color=fff&size=128`;
+            document.getElementById('vs-avatar').src = fallbackStatusAvatar;
             document.getElementById('vs-time').innerText = st.timestamp ? new Date(st.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Baru saja';
             
             const delBtn = document.getElementById('vs-btn-delete');
@@ -1193,7 +1205,8 @@
             if (snapshot.empty) return alert("Email belum terdaftar.");
             let targetUser; snapshot.forEach(doc => targetUser = doc.data());
             
-            await setDoc(doc(db, "users", targetUser.uid, "friend_requests", currentUser.uid), { uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email, photoURL: currentUser.photoURL, timestamp: serverTimestamp() });
+            const fallbackReqPhoto = currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName || 'User')}&background=random&color=fff&size=128`;
+            await setDoc(doc(db, "users", targetUser.uid, "friend_requests", currentUser.uid), { uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email, photoURL: fallbackReqPhoto, timestamp: serverTimestamp() });
             document.getElementById('add-email-input').value = '';
             document.getElementById('add-friend-modal').style.display = 'none';
             alert("Permintaan pertemanan terkirim!");
@@ -1208,8 +1221,9 @@
                     cb.style.display = 'block'; cb.innerText = snapshot.size;
                     snapshot.forEach((docSnap) => {
                         const req = docSnap.data();
+                        const fallbackReqAvatar = req.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(req.name || 'User')}&background=random&color=fff&size=128`;
                         const div = document.createElement('div'); div.className = 'list-item';
-                        div.innerHTML = `<img src="${req.photoURL || 'https://via.placeholder.com/45'}" class="avatar"><div class="info"><p class="name">${req.name}</p><p class="preview">Minta ditambahkan</p></div><div class="request-actions"><button class="btn-acc" data-uid="${req.uid}">Terima</button><button class="btn-rej" data-uid="${req.uid}">Tolak</button></div>`;
+                        div.innerHTML = `<img src="${fallbackReqAvatar}" class="avatar" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'"><div class="info"><p class="name">${req.name}</p><p class="preview">Minta ditambahkan</p></div><div class="request-actions"><button class="btn-acc" data-uid="${req.uid}">Terima</button><button class="btn-rej" data-uid="${req.uid}">Tolak</button></div>`;
                         div.querySelector('.btn-acc').addEventListener('click', async () => {
                             await setDoc(doc(db, "users", currentUser.uid, "contacts", req.uid), { uid: req.uid, type: 'private' });
                             await setDoc(doc(db, "users", req.uid, "contacts", currentUser.uid), { uid: currentUser.uid, type: 'private' });
@@ -1226,7 +1240,8 @@
             const gName = document.getElementById('group-name-input').value.trim();
             if (!gName) return alert("Nama grup tidak boleh kosong!");
             const groupRef = doc(collection(db, "groups")); const groupId = groupRef.id;
-            await setDoc(groupRef, { uid: groupId, name: gName, type: 'group', members: [currentUser.uid], admins: [currentUser.uid], createdAt: serverTimestamp() });
+            const defaultGroupPhoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(gName)}&background=00a884&color=fff&size=128`;
+            await setDoc(groupRef, { uid: groupId, name: gName, type: 'group', members: [currentUser.uid], admins: [currentUser.uid], photoURL: defaultGroupPhoto, createdAt: serverTimestamp() });
             await setDoc(doc(db, "users", currentUser.uid, "contacts", groupId), { uid: groupId, type: 'group', name: gName });
             document.getElementById('group-name-input').value = '';
             document.getElementById('create-group-modal').style.display = 'none';
@@ -1242,8 +1257,8 @@
                     if (cData.type === 'group') {
                         onSnapshot(doc(db, "groups", cData.uid), (gDoc) => {
                             if (!gDoc.exists()) return; const latest = gDoc.data(); const chatId = latest.uid;
-                            const groupPhoto = latest.photoURL || 'https://via.placeholder.com/45';
-                            const groupAvatarHtml = latest.photoURL ? `<img src="${groupPhoto}" class="avatar">` : `<div class="avatar" style="background:#00a884; color:white;">👥</div>`;
+                            const groupPhoto = latest.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(latest.name || 'Group')}&background=00a884&color=fff&size=128`;
+                            const groupAvatarHtml = `<img src="${groupPhoto}" class="avatar" onerror="this.src='https://ui-avatars.com/api/?name=Group&background=00a884&color=fff&size=128'">`;
                             
                             setupChatNotificationListener(chatId, latest.name, groupPhoto, 'group');
                             document.getElementById(`chat-item-${cData.uid}`)?.remove(); document.getElementById(`contact-item-${cData.uid}`)?.remove();
@@ -1264,7 +1279,7 @@
                                 
                                 let sX=0, cX=0, swiping=false;
                                 d.addEventListener('touchstart', e => { sX=e.touches[0].clientX; swiping=true; }); d.addEventListener('touchmove', e => { if(!swiping) return; cX=e.touches[0].clientX; let diff=cX-sX; if(diff<0 && diff>-100) d.style.transform=`translateX(${diff}px)`; }); d.addEventListener('touchend', () => { swiping=false; let diff=cX-sX; d.style.transform=(diff<-50)?`translateX(-90px)`:`translateX(0px)`; sX=0;cX=0; });
-                                d.addEventListener('click', () => { d.style.transform=`translateX(0px)`; openChat(latest.uid, latest.name, latest.photoURL, 'group'); });
+                                d.addEventListener('click', () => { d.style.transform=`translateX(0px)`; openChat(latest.uid, latest.name, groupPhoto, 'group'); });
                                 
                                 w.appendChild(delBtn); w.appendChild(d); return w; 
                             };
@@ -1276,7 +1291,7 @@
                                 
                                 let sX=0, cX=0, swiping=false;
                                 d.addEventListener('touchstart', e => { sX=e.touches[0].clientX; swiping=true; }); d.addEventListener('touchmove', e => { if(!swiping) return; cX=e.touches[0].clientX; let diff=cX-sX; if(diff<0 && diff>-100) d.style.transform=`translateX(${diff}px)`; }); d.addEventListener('touchend', () => { swiping=false; let diff=cX-sX; d.style.transform=(diff<-50)?`translateX(-90px)`:`translateX(0px)`; sX=0;cX=0; });
-                                d.addEventListener('click', () => { d.style.transform=`translateX(0px)`; openChat(latest.uid, latest.name, latest.photoURL, 'group'); });
+                                d.addEventListener('click', () => { d.style.transform=`translateX(0px)`; openChat(latest.uid, latest.name, groupPhoto, 'group'); });
                                 w.appendChild(delBtn); w.appendChild(d); return w;
                             };
                             contactListContainer.appendChild(mkContact()); chatListContainer.appendChild(mkChat());
@@ -1284,7 +1299,8 @@
                     } else {
                         onSnapshot(doc(db, "users", cData.uid), (uDoc) => {
                             if (!uDoc.exists()) return; const latest = uDoc.data(); const chatId = currentUser.uid < latest.uid ? `${currentUser.uid}_${latest.uid}` : `${latest.uid}_${currentUser.uid}`;
-                            setupChatNotificationListener(chatId, latest.name, latest.photoURL, 'private');
+                            const userAvatar = latest.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(latest.name || latest.email || 'User')}&background=random&color=fff&size=128`;
+                            setupChatNotificationListener(chatId, latest.name, userAvatar, 'private');
                             document.getElementById(`chat-item-${cData.uid}`)?.remove(); document.getElementById(`contact-item-${cData.uid}`)?.remove();
                             document.getElementById(`contact-chat-item-${cData.uid}`)?.remove();
 
@@ -1300,14 +1316,14 @@
                                 delBtn.addEventListener('click', async (e) => { e.stopPropagation(); if (confirm('Hapus chat?')) { const msgs = await getDocs(collection(db, "chats", chatId, "messages")); msgs.docs.forEach(d => deleteDoc(d.ref)); w.remove(); } });
                                 
                                 const d = document.createElement('div'); d.className = 'list-item chat-list-item'; 
-                                d.innerHTML = `<img src="${latest.photoURL || 'https://via.placeholder.com/45'}" class="avatar" style="cursor:pointer;" title="Ketuk profil untuk info"><div class="info"><p class="name">${latest.name || 'User'}</p><p class="preview" style="font-size:13px;">Kontak Pribadi</p></div>`; 
+                                d.innerHTML = `<img src="${userAvatar}" class="avatar" style="cursor:pointer;" title="Ketuk profil untuk info" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'"><div class="info"><p class="name">${latest.name || 'User'}</p><p class="preview" style="font-size:13px;">Kontak Pribadi</p></div>`; 
                                 
                                 d.querySelector('.avatar').addEventListener('click', (e) => { e.stopPropagation(); showUserProfile(latest.uid); });
                                 
                                 let sX=0, cX=0, swiping=false;
                                 d.addEventListener('touchstart', e => { sX=e.touches[0].clientX; swiping=true; }); d.addEventListener('touchmove', e => { if(!swiping) return; cX=e.touches[0].clientX; let diff=cX-sX; if(diff<0 && diff>-100) d.style.transform=`translateX(${diff}px)`; }); d.addEventListener('touchend', () => { swiping=false; let diff=cX-sX; d.style.transform=(diff<-50)?`translateX(-90px)`:`translateX(0px)`; sX=0;cX=0; });
                                 
-                                d.querySelector('.info').addEventListener('click', () => { d.style.transform=`translateX(0px)`; openChat(latest.uid, latest.name, latest.photoURL, 'private'); });
+                                d.querySelector('.info').addEventListener('click', () => { d.style.transform=`translateX(0px)`; openChat(latest.uid, latest.name, userAvatar, 'private'); });
                                 w.appendChild(delBtn); w.appendChild(d); return w; 
                             };
 
@@ -1317,14 +1333,14 @@
                                 delBtn.addEventListener('click', async (e) => { e.stopPropagation(); if (confirm('Hapus chat?')) { const msgs = await getDocs(collection(db, "chats", chatId, "messages")); msgs.docs.forEach(d => deleteDoc(d.ref)); w.remove(); } });
                                 
                                 const d = document.createElement('div'); d.className = 'list-item chat-list-item'; 
-                                d.innerHTML = `<img src="${latest.photoURL || 'https://via.placeholder.com/45'}" class="avatar" style="cursor:pointer;" title="Ketuk profil untuk info"><div class="info"><p class="name">${latest.name}</p><p class="preview">Ketuk untuk obrolan</p></div><span class="badge-chat-count" id="unread-badge-${cData.uid}">0</span>`;
+                                d.innerHTML = `<img src="${userAvatar}" class="avatar" style="cursor:pointer;" title="Ketuk profil untuk info" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'"><div class="info"><p class="name">${latest.name}</p><p class="preview">Ketuk untuk obrolan</p></div><span class="badge-chat-count" id="unread-badge-${cData.uid}">0</span>`;
                                 
                                 d.querySelector('.avatar').addEventListener('click', (e) => { e.stopPropagation(); showUserProfile(latest.uid); d.style.transform=`translateX(0px)`; });
                                 
                                 let sX=0, cX=0, swiping=false;
                                 d.addEventListener('touchstart', e => { sX=e.touches[0].clientX; swiping=true; }); d.addEventListener('touchmove', e => { if(!swiping) return; cX=e.touches[0].clientX; let diff=cX-sX; if(diff<0 && diff>-100) d.style.transform=`translateX(${diff}px)`; }); d.addEventListener('touchend', () => { swiping=false; let diff=cX-sX; d.style.transform=(diff<-50)?`translateX(-90px)`:`translateX(0px)`; sX=0;cX=0; });
                                 
-                                d.querySelector('.info').addEventListener('click', () => { d.style.transform=`translateX(0px)`; openChat(latest.uid, latest.name, latest.photoURL, 'private'); });
+                                d.querySelector('.info').addEventListener('click', () => { d.style.transform=`translateX(0px)`; openChat(latest.uid, latest.name, userAvatar, 'private'); });
                                 w.appendChild(delBtn); w.appendChild(d); return w;
                             };
                             contactListContainer.appendChild(mkContact()); chatListContainer.appendChild(mkChat());
@@ -1366,12 +1382,8 @@
             document.getElementById('chat-empty-state').style.display = 'none'; document.getElementById('chat-active-state').style.display = 'flex';
             document.getElementById('fab-container').style.display = 'none';
             
-            let avatarHtml = '';
-            if (type === 'group') {
-                avatarHtml = photo ? `<img src="${photo}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">` : `<div class="avatar" style="background:#00a884; color:white; width:35px; height:35px; font-size:15px; margin:0;">👥</div>`;
-            } else {
-                avatarHtml = `<img src="${photo || 'https://via.placeholder.com/45'}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">`;
-            }
+            const fallbackAvatar = photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=random&color=fff&size=128`;
+            let avatarHtml = `<img src="${fallbackAvatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'">`;
 
             document.getElementById('chat-main-header').innerHTML = `${avatarHtml} <div style="display:flex; flex-direction:column; line-height:1.2;"><span style="font-weight:bold; font-size: 16px; color:var(--text-main);">${name}</span><span style="font-size:11px; color:var(--text-preview);">${type === 'group' ? 'Ketuk untuk info grup' : 'Ketuk untuk info profil'}</span></div>`;
             if (window.innerWidth <= 768) document.getElementById('chat-main-area').classList.add('active-mobile');
@@ -1459,8 +1471,10 @@
                 const cData = docSnap.data(); if (cData.type === 'group' || currentMembers.includes(cData.uid)) continue;
                 has = true; const uDoc = await getDoc(doc(db, "users", cData.uid));
                 if (uDoc.exists()) {
-                    const uData = uDoc.data(); const div = document.createElement('div'); div.className = 'list-item';
-                    div.innerHTML = `<img src="${uData.photoURL || 'https://via.placeholder.com/45'}" class="avatar"><div class="info"><p class="name">${uData.name}</p></div><button class="btn-acc" style="margin-left:auto;">+ Tambah</button>`;
+                    const uData = uDoc.data(); 
+                    const fallbackAddPhoto = uData.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(uData.name || 'User')}&background=random&color=fff&size=128`;
+                    const div = document.createElement('div'); div.className = 'list-item';
+                    div.innerHTML = `<img src="${fallbackAddPhoto}" class="avatar" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'"><div class="info"><p class="name">${uData.name}</p></div><button class="btn-acc" style="margin-left:auto;">+ Tambah</button>`;
                     div.querySelector('.btn-acc').addEventListener('click', async () => {
                         await updateDoc(doc(db, "groups", activeTargetId), { members: arrayUnion(uData.uid) });
                         await setDoc(doc(db, "users", uData.uid, "contacts", activeTargetId), { uid: activeTargetId, type: 'group', name: activeTargetName });
@@ -1482,7 +1496,8 @@
             const members = gData.members || []; 
             const admins = gData.admins || [];
             
-            document.getElementById('group-info-photo').src = gData.photoURL || 'https://via.placeholder.com/80';
+            const fallbackGroupInfoPhoto = gData.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(gData.name || 'Group')}&background=00a884&color=fff&size=128`;
+            document.getElementById('group-info-photo').src = fallbackGroupInfoPhoto;
             
             const isAdmin = admins.includes(currentUser.uid);
             document.getElementById('group-admin-actions').style.display = isAdmin ? 'block' : 'none';
@@ -1492,6 +1507,7 @@
                 const uDoc = await getDoc(doc(db, "users", memberId));
                 if (uDoc.exists()) {
                     const uData = uDoc.data(); const isThisAdmin = admins.includes(memberId);
+                    const fallbackMemberPhoto = uData.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(uData.name || 'User')}&background=random&color=fff&size=128`;
                     
                     let btnAddFriendHtml = '';
                     if (memberId !== currentUser.uid) {
@@ -1503,7 +1519,7 @@
 
                     const div = document.createElement('div'); div.className = 'list-item';
                     div.innerHTML = `
-                        <img src="${uData.photoURL || 'https://via.placeholder.com/45'}" class="avatar" style="cursor:pointer;" onclick="event.stopPropagation(); document.getElementById('user-profile-modal').style.display='flex';">
+                        <img src="${fallbackMemberPhoto}" class="avatar" style="cursor:pointer;" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'" onclick="event.stopPropagation(); document.getElementById('user-profile-modal').style.display='flex';">
                         <div class="info">
                             <div style="display:flex; align-items:center;">
                                 <p class="name" style="margin:0;">${uData.name} ${memberId === currentUser.uid ? '(Anda)' : ''}</p>
@@ -1514,9 +1530,10 @@
                     `;
                     
                     if (btnAddFriendHtml) {
+                        const reqPhoto = currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName || 'User')}&background=random&color=fff&size=128`;
                         div.querySelector('.btn-direct-add-friend').addEventListener('click', async (e) => {
                             e.target.innerHTML = "⏳"; e.target.disabled = true;
-                            await setDoc(doc(db, "users", memberId, "friend_requests", currentUser.uid), { uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email, photoURL: currentUser.photoURL, timestamp: serverTimestamp() });
+                            await setDoc(doc(db, "users", memberId, "friend_requests", currentUser.uid), { uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email, photoURL: reqPhoto, timestamp: serverTimestamp() });
                             e.target.innerHTML = "Terkirim";
                             e.target.style.background = "#B28DFF"; e.target.style.color = "white";
                         });
@@ -1757,7 +1774,10 @@
         }
 
         document.getElementById('btn-cancel-call-selection').addEventListener('click', exitCallSelectionMode);
+        
+        // Perbaikan utama tombol hapus banyak pada riwayat panggilan
         document.getElementById('btn-delete-selected-calls').addEventListener('click', async () => {
+            if (selectedCallIds.size === 0) return;
             if (!confirm(`Hapus ${selectedCallIds.size} riwayat panggilan terpilih?`)) return;
             
             let allCallItems = [];
@@ -1774,9 +1794,13 @@
                 let found = allCallItems.find(x => x.id === id);
                 if (found) {
                     await deleteCallItem(found);
+                    if (found.sourceType === 'call') {
+                        delete callHistoryState.calls[found.docId];
+                    }
                 }
             }
             exitCallSelectionMode();
+            renderCallHistory();
         });
 
         function listenForCallHistory() {
@@ -1837,7 +1861,8 @@
             document.getElementById('active-call-name').innerText = activeTargetName;
             document.getElementById('active-call-status').innerText = "Memanggil...";
 
-            document.getElementById('active-call-avatar').src = activeTargetPhoto || 'https://via.placeholder.com/100';
+            const fallbackCallAvatar = activeTargetPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeTargetName || 'User')}&background=random&color=fff&size=128`;
+            document.getElementById('active-call-avatar').src = fallbackCallAvatar;
 
             if (mode === 'video') { document.getElementById('local-video').style.display = 'block'; document.getElementById('remote-video').style.display = 'block'; document.getElementById('active-call-avatar').style.display = 'none'; } 
             else { document.getElementById('local-video').style.display = 'none'; document.getElementById('remote-video').style.display = 'none'; document.getElementById('active-call-avatar').style.display = 'block'; }
@@ -1872,8 +1897,10 @@
                 targetMembersArr = [activeTargetId];
             }
 
+            const callerPhotoDefault = currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName || 'User')}&background=random&color=fff&size=128`;
+
             await setDoc(callDocRef, { 
-                callerId: currentUser.uid, callerName: currentUser.displayName, callerPhoto: currentUser.photoURL,
+                callerId: currentUser.uid, callerName: currentUser.displayName, callerPhoto: callerPhotoDefault,
                 calleeId: activeTargetId, calleeName: activeTargetName, 
                 calleeMembers: targetMembersArr, type: activeTargetType, groupName: theGroupName, groupPhoto: theGroupPhoto,
                 callMode: mode, offer: { type: offerDescription.type, sdp: offerDescription.sdp }, 
@@ -1917,7 +1944,10 @@
 
             const displayName = callData.type === 'group' ? callData.groupName : callData.callerName;
             document.getElementById('active-call-name').innerText = displayName;
-            document.getElementById('active-call-avatar').src = callData.type === 'group' ? (callData.groupPhoto || 'https://via.placeholder.com/100') : (callData.callerPhoto || 'https://via.placeholder.com/100');
+            
+            const rawIncomingPhoto = callData.type === 'group' ? (callData.groupPhoto || '') : (callData.callerPhoto || '');
+            const fallbackIncomingPhoto = rawIncomingPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || 'User')}&background=random&color=fff&size=128`;
+            document.getElementById('active-call-avatar').src = fallbackIncomingPhoto;
 
             currentCallMode = callData.callMode || 'voice';
             if (currentCallMode === 'video') { 
