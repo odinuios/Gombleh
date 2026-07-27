@@ -447,7 +447,7 @@
                     ringtoneAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
                     ringtoneAudio.loop = true;
                 }
-                ringtoneAudio.play().catch(e => console.log("Audio autoplay diblokir browser:", e));
+                ringtoneAudio.play().catch(e => {});
             } catch (err) {}
         }
         function stopRingtone() { if (ringtoneAudio) { ringtoneAudio.pause(); ringtoneAudio.currentTime = 0; } }
@@ -495,11 +495,12 @@
             }
         }
 
-        // ================= SISTEM PANGGILAN BARU DENGAN DERING GRUP =================
+        // ================= SISTEM PANGGILAN & DERING =================
         let incomingCallUnsub = null;
         function listenForIncomingCalls() {
             if (!currentUser) return;
-            // Listen berdasarkan member yang di-target oleh caller (bisa satu orang atau se-grup)
+            
+            // Dengar semua panggilan dimana currentUser adalah salah satu calleeMembers (Bisa Private/Group)
             incomingCallUnsub = onSnapshot(query(collection(db, "calls"), where("calleeMembers", "array-contains", currentUser.uid)), (snapshot) => {
                 snapshot.docChanges().forEach((change) => {
                     const callData = change.doc.data();
@@ -507,11 +508,11 @@
 
                     if (change.type === "added" || change.type === "modified") {
                         if (callData.status === 'calling') {
+                            // Tampilkan jika belum tampil
                             if (!document.getElementById('incoming-call-modal').style.display || document.getElementById('incoming-call-modal').style.display === 'none') {
                                 currentCallDocId = change.doc.id;
                                 currentCallMode = callData.callMode || 'voice';
                                 
-                                // Tampilkan Nama Penelepon (Jika grup, beri tau dari grup mana)
                                 document.getElementById('incoming-caller-name').innerText = callData.type === 'group' ? `${callData.groupName}\n(${callData.callerName})` : callData.callerName;
                                 document.getElementById('incoming-call-type').innerText = currentCallMode === 'video' ? "📹 Panggilan Video Masuk..." : "📞 Panggilan Suara Masuk...";
                                 
@@ -520,11 +521,12 @@
                                 showNotification("Panggilan Masuk", `${callData.callerName} memanggil Anda...`, 'https://raw.githubusercontent.com/odinuios/Gombleh/refs/heads/main/icon.png');
                             }
                         } else if (callData.status !== 'calling') {
-                            // Panggilan diangkat oleh seseorang (grup) atau diakhiri
+                            // Berhenti dering jika status berubah (seseorang menjawab, atau dimatikan)
                             if (currentCallDocId === change.doc.id) {
                                 stopRingtone();
                                 document.getElementById('incoming-call-modal').style.display = 'none';
-                                // Jika dijawab, dan bukan kita yang jawab (pc null), artinya member lain yang ambil (Mesh logic sederhana)
+                                
+                                // Jika kita belum sempat buat pc (orang lain yang angkat), lupakan currentCallDocId
                                 if (callData.status === 'answered' && !pc) {
                                     currentCallDocId = null;
                                 } else if (callData.status === 'ended' || callData.status === 'rejected') {
@@ -572,7 +574,6 @@
             const isImage = (inputId === 'input-photo' || inputId === 'input-camera' || inputId === 'input-group-photo');
             const msgType = msgTypeOverride || (isImage ? 'image' : 'file');
             
-            // Logika terpisah jika ini untuk foto grup
             if (inputId === 'input-group-photo') {
                 document.getElementById('group-info-photo').style.opacity = '0.5';
                 try {
@@ -582,7 +583,7 @@
                 } catch (error) { alert("Gagal merubah foto grup."); }
                 document.getElementById('group-info-photo').style.opacity = '1';
                 e.target.value = '';
-                return; // Selesai. Jangan kirim pesan.
+                return;
             }
 
             const chatId = activeTargetType === 'group' ? activeTargetId : (currentUser.uid < activeTargetId ? `${currentUser.uid}_${activeTargetId}` : `${activeTargetId}_${currentUser.uid}`);
@@ -599,8 +600,6 @@
         }
 
         inputPhoto.addEventListener('change', handleAttachment); inputCamera.addEventListener('change', handleAttachment); inputFile.addEventListener('change', handleAttachment);
-        
-        // Listener upload untuk Foto Grup
         document.getElementById('group-info-photo').addEventListener('click', () => { document.getElementById('input-group-photo').click(); });
         document.getElementById('input-group-photo').addEventListener('change', handleAttachment);
 
@@ -698,7 +697,6 @@
             alert("Grup berhasil dibuat!");
         });
 
-        // LOAD LIST
         function loadSidebarItems() {
             chatListContainer.innerHTML = ''; contactListContainer.innerHTML = '';
             onSnapshot(collection(db, "users", currentUser.uid, "contacts"), (snapshot) => {
@@ -749,9 +747,7 @@
                             const mkContact = () => { 
                                 const d = document.createElement('div'); d.className = 'list-item item-private'; d.id = `contact-item-${cData.uid}`; 
                                 d.innerHTML = `<img src="${latest.photoURL || 'https://via.placeholder.com/45'}" class="avatar" style="cursor:pointer;" title="Ketuk profil untuk info"><div class="info" style="cursor:pointer;"><p class="name">${latest.name || 'User'}</p><p class="preview" style="font-size:13px;">Kontak Pribadi</p></div>`; 
-                                // Event buka profil lewat Avatar
                                 d.querySelector('.avatar').addEventListener('click', (e) => { e.stopPropagation(); showUserProfile(latest.uid); });
-                                // Event buka obrolan lewat Container info
                                 d.querySelector('.info').addEventListener('click', () => openChat(latest.uid, latest.name, latest.photoURL, 'private')); 
                                 return d; 
                             };
@@ -796,7 +792,6 @@
             });
         }
 
-        // Klik header obrolan (Lihat Anggota untuk Grup, Lihat Profil untuk Private)
         document.getElementById('chat-main-header').addEventListener('click', () => {
             if (activeTargetType === 'group') {
                 document.getElementById('btn-open-group-modal-from-members').style.display = 'inline-block';
@@ -913,7 +908,6 @@
             const members = gData.members || []; 
             const admins = gData.admins || [];
             
-            // Set foto grup di atas
             document.getElementById('group-info-photo').src = gData.photoURL || 'https://via.placeholder.com/80';
             
             const isAdmin = admins.includes(currentUser.uid);
@@ -925,7 +919,6 @@
                 if (uDoc.exists()) {
                     const uData = uDoc.data(); const isThisAdmin = admins.includes(memberId);
                     
-                    // Cek apakah member ini ada di kontak kita (tambah teman bypass)
                     let btnAddFriendHtml = '';
                     if (memberId !== currentUser.uid) {
                         const checkContact = await getDoc(doc(db, "users", currentUser.uid, "contacts", memberId));
@@ -946,7 +939,6 @@
                         </div>
                     `;
                     
-                    // Action: Add Friend directly from Group
                     if (btnAddFriendHtml) {
                         div.querySelector('.btn-direct-add-friend').addEventListener('click', async (e) => {
                             e.target.innerHTML = "⏳"; e.target.disabled = true;
@@ -958,7 +950,6 @@
 
                     if (isAdmin && memberId !== currentUser.uid) {
                         const actDiv = document.createElement('div'); actDiv.className = "request-actions";
-                        
                         if (!isThisAdmin) {
                             const btnAdmin = document.createElement('button'); btnAdmin.className = 'btn-acc'; btnAdmin.innerText = 'Jadikan Admin';
                             btnAdmin.addEventListener('click', async () => {
@@ -969,7 +960,6 @@
                             });
                             actDiv.appendChild(btnAdmin);
                         }
-
                         const btnKeluarkan = document.createElement('button'); btnKeluarkan.className = 'btn-rej'; btnKeluarkan.innerText = 'Keluarkan';
                         btnKeluarkan.addEventListener('click', async () => {
                             if (confirm(`Keluarkan ${uData.name}?`)) {
@@ -995,62 +985,90 @@
             document.getElementById('group-members-modal').style.display = 'none'; document.getElementById('chat-active-state').style.display = 'none'; document.getElementById('chat-empty-state').style.display = 'flex'; activeTargetId = null;
         });
 
-        // ================= RIWAYAT PANGGILAN =================
-        function listenForCallHistory() {
-            const q = query(collection(db, "calls"), or(where("callerId", "==", currentUser.uid), where("calleeMembers", "array-contains", currentUser.uid)), orderBy("timestamp", "desc"), limit(20));
-            onSnapshot(q, (snapshot) => {
-                document.querySelectorAll('.call-history-item').forEach(el => el.remove());
-                if(snapshot.empty) { emptyCalls.style.display = 'block'; } 
-                else {
-                    emptyCalls.style.display = 'none';
-                    snapshot.forEach(docSnap => {
-                        const data = docSnap.data();
-                        const isOutgoing = data.callerId === currentUser.uid;
-                        
-                        let targetId, targetName;
-                        if (data.type === 'group') {
-                            targetId = data.calleeId; // Ini akan berupa groupId
-                            targetName = data.groupName || 'Grup';
-                        } else {
-                            targetId = isOutgoing ? data.calleeId : data.callerId;
-                            targetName = isOutgoing ? (data.calleeName || 'Seseorang') : data.callerName;
-                        }
+        // ================= RIWAYAT PANGGILAN TEROPTIMASI TANPA INDEX COMPOSITE =================
+        let callHistoryState = { caller: [], callee: [] };
+        function renderCallHistory() {
+            let allCalls = [...callHistoryState.caller, ...callHistoryState.callee];
+            
+            // Urutkan berdasarkan timestamp secara manual 
+            allCalls.sort((a, b) => {
+                let ta = a.timestamp ? a.timestamp.toMillis() : 0;
+                let tb = b.timestamp ? b.timestamp.toMillis() : 0;
+                return tb - ta;
+            });
+            
+            // Hapus duplikat
+            let uniqueCalls = []; let ids = new Set();
+            for(let c of allCalls) { if(!ids.has(c.id)) { ids.add(c.id); uniqueCalls.push(c); } }
+            uniqueCalls = uniqueCalls.slice(0, 20); // Ambil 20 teratas
+            
+            document.querySelectorAll('.call-history-item').forEach(el => el.remove());
+            if(uniqueCalls.length === 0) { emptyCalls.style.display = 'block'; } 
+            else {
+                emptyCalls.style.display = 'none';
+                uniqueCalls.forEach(data => {
+                    const isOutgoing = data.callerId === currentUser.uid;
+                    let targetId, targetName;
+                    
+                    if (data.type === 'group') {
+                        targetId = data.calleeId;
+                        targetName = data.groupName || 'Grup';
+                    } else {
+                        targetId = isOutgoing ? data.calleeId : data.callerId;
+                        targetName = isOutgoing ? (data.calleeName || 'Seseorang') : data.callerName;
+                    }
 
-                        const isMissed = !isOutgoing && data.status !== 'answered' && data.status !== 'calling';
-                        const timeStr = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                    const isMissed = !isOutgoing && data.status !== 'answered' && data.status !== 'calling';
+                    const timeStr = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
-                        const div = document.createElement('div');
-                        div.className = 'list-item call-history-item';
-                        
-                        let callStatusIcon = isOutgoing ? '↗️' : (isMissed ? '↙️ (Missed)' : '↙️');
-                        let callTypeIcon = data.callMode === 'video' ? '📹' : '📞';
-                        let textColor = isMissed ? 'color: #d9534f;' : 'color: #667781;';
-                        
-                        div.innerHTML = `
-                            <div class="avatar" style="background:#dfe5e7;">${targetName.charAt(0)}</div>
-                            <div class="info">
-                                <p class="name" style="${isMissed ? 'color: #d9534f;' : ''}">${targetName}</p>
-                                <p class="preview" style="${textColor}">${callStatusIcon} ${timeStr}</p>
-                            </div>
-                            <div class="call-icon-indicator">${callTypeIcon}</div>
-                        `;
+                    const div = document.createElement('div');
+                    div.className = 'list-item call-history-item';
+                    
+                    let callStatusIcon = isOutgoing ? '↗️' : (isMissed ? '↙️ (Missed)' : '↙️');
+                    let callTypeIcon = data.callMode === 'video' ? '📹' : '📞';
+                    let textColor = isMissed ? 'color: #d9534f;' : 'color: #667781;';
+                    
+                    div.innerHTML = `
+                        <div class="avatar" style="background:#dfe5e7;">${targetName.charAt(0)}</div>
+                        <div class="info">
+                            <p class="name" style="${isMissed ? 'color: #d9534f;' : ''}">${targetName}</p>
+                            <p class="preview" style="${textColor}">${callStatusIcon} ${timeStr}</p>
+                        </div>
+                        <div class="call-icon-indicator">${callTypeIcon}</div>
+                    `;
 
-                        div.addEventListener('click', () => {
-                            activeTargetId = targetId;
-                            activeTargetName = targetName;
-                            activeTargetType = data.type || 'private';
-                            startCall(data.callMode);
-                        });
-
-                        callHistoryContainer.appendChild(div);
+                    div.addEventListener('click', () => {
+                        activeTargetId = targetId; activeTargetName = targetName; activeTargetType = data.type || 'private';
+                        startCall(data.callMode);
                     });
-                }
-            }, (error) => {});
+
+                    callHistoryContainer.appendChild(div);
+                });
+            }
         }
 
-        // ================= WEBRTC PANGGILAN (MODIFIKASI RING GROUP) =================
+        function listenForCallHistory() {
+            if (!currentUser) return;
+            
+            // Ambil callerId dan calleeMembers terpisah tanpa orderBy yang butuh composite Index
+            const qCaller = query(collection(db, "calls"), where("callerId", "==", currentUser.uid));
+            const qCallee = query(collection(db, "calls"), where("calleeMembers", "array-contains", currentUser.uid));
+            
+            onSnapshot(qCaller, (snap) => {
+                callHistoryState.caller = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                renderCallHistory();
+            });
+            
+            onSnapshot(qCallee, (snap) => {
+                callHistoryState.callee = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                renderCallHistory();
+            });
+        }
+
+        // ================= WEBRTC PANGGILAN (MODIFIKASI RING GROUP & RACE CONDITION) =================
         const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }] };
         let pc = null; let localStream = null; let callSnapshotUnsub = null;
+        let callerIceQueue = []; // Queue untuk mencegah error remoteDescription null
         
         async function startCall(mode) {
             currentCallMode = mode; document.getElementById('active-call-modal').style.display = 'flex';
@@ -1071,11 +1089,11 @@
 
             const callDocRef = doc(collection(db, "calls")); currentCallDocId = callDocRef.id;
             const offerCandidates = collection(callDocRef, 'offerCandidates'); const answerCandidates = collection(callDocRef, 'answerCandidates');
+            
             pc.onicecandidate = event => { if (event.candidate) addDoc(offerCandidates, event.candidate.toJSON()); };
             
             const offerDescription = await pc.createOffer(); await pc.setLocalDescription(offerDescription);
             
-            // Konfigurasi Array Callee berdasarkan private atau grup
             let targetMembersArr = [];
             let theGroupName = "";
             if (activeTargetType === 'group') {
@@ -1099,19 +1117,43 @@
             callSnapshotUnsub = onSnapshot(callDocRef, (docSnap) => {
                 const data = docSnap.data();
                 if (!data || data.status === 'ended' || data.status === 'rejected') { stopCallCleanup(); return; }
-                if (data?.answer && !pc.currentRemoteDescription) pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                
+                // Mencegah error jika candidate dikirim terlalu cepat oleh callee
+                if (data?.answer && !pc.currentRemoteDescription) {
+                    pc.setRemoteDescription(new RTCSessionDescription(data.answer)).then(() => {
+                        callerIceQueue.forEach(cand => pc.addIceCandidate(cand).catch(e => {}));
+                        callerIceQueue = [];
+                    });
+                }
+                
                 if (data?.status === 'answered') document.getElementById('active-call-status').innerText = "Terhubung";
             });
-            onSnapshot(answerCandidates, snapshot => { snapshot.docChanges().forEach(change => { if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data())); }); });
+            
+            onSnapshot(answerCandidates, snapshot => { 
+                snapshot.docChanges().forEach(change => { 
+                    if (change.type === 'added') {
+                        const cand = new RTCIceCandidate(change.doc.data());
+                        if (pc.currentRemoteDescription) {
+                            pc.addIceCandidate(cand).catch(e => {});
+                        } else {
+                            callerIceQueue.push(cand); // Antrean
+                        }
+                    }
+                }); 
+            });
         }
 
         document.getElementById('btn-start-voice-call').addEventListener('click', () => startCall('voice'));
         document.getElementById('btn-start-video-call').addEventListener('click', () => startCall('video'));
 
-        async function acceptIncomingCall() {
+        async function acceptIncomingCall(callData) {
             document.getElementById('active-call-modal').style.display = 'flex';
             document.getElementById('active-call-status').innerText = "Menghubungkan...";
 
+            const displayName = callData.type === 'group' ? callData.groupName : callData.callerName;
+            document.getElementById('active-call-name').innerText = displayName;
+
+            currentCallMode = callData.callMode || 'voice';
             if (currentCallMode === 'video') { 
                 document.getElementById('local-video').style.display = 'block'; document.getElementById('remote-video').style.display = 'block'; document.getElementById('active-call-avatar').style.display = 'none'; 
             } else { 
@@ -1138,24 +1180,22 @@
 
             pc.onicecandidate = event => { if (event.candidate) addDoc(answerCandidates, event.candidate.toJSON()); };
 
-            const callDocSnap = await getDoc(callDocRef);
-            const callData = callDocSnap.data();
-            if (!callData) return;
-
             await pc.setRemoteDescription(new RTCSessionDescription(callData.offer));
             const answerDescription = await pc.createAnswer();
             await pc.setLocalDescription(answerDescription);
 
-            // Set 'answered' akan membuat anggota grup lain stop dering. (Karena trigger change)
             await updateDoc(callDocRef, { status: 'answered', answer: { type: answerDescription.type, sdp: answerDescription.sdp } });
 
             onSnapshot(offerCandidates, snapshot => {
-                snapshot.docChanges().forEach(change => { if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data())); });
+                snapshot.docChanges().forEach(change => { 
+                    if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data())).catch(e=>{}); 
+                });
             });
 
             callSnapshotUnsub = onSnapshot(callDocRef, (docSnap) => {
                 const data = docSnap.data();
                 if (!data || data.status === 'ended' || data.status === 'rejected') { stopCallCleanup(); }
+                if (data && data.status === 'answered') document.getElementById('active-call-status').innerText = "Terhubung";
             });
         }
         
@@ -1171,7 +1211,17 @@
             stopRingtone();
             document.getElementById('incoming-call-modal').style.display = 'none';
             if (!currentCallDocId) return;
-            acceptIncomingCall();
+            
+            const callDoc = await getDoc(doc(db, "calls", currentCallDocId));
+            if(callDoc.exists()) {
+                const cData = callDoc.data();
+                if(cData.status !== 'calling') {
+                    alert("Panggilan sudah dijawab atau diakhiri.");
+                    currentCallDocId = null;
+                    return;
+                }
+                acceptIncomingCall(cData);
+            }
         });
         
         document.getElementById('btn-reject-call').addEventListener('click', async () => { 
@@ -1181,23 +1231,35 @@
                 const callDoc = await getDoc(doc(db, "calls", currentCallDocId));
                 if (callDoc.exists()) {
                     const cData = callDoc.data();
-                    await logMissedCallToChat(cData.callerId, cData.calleeId, cData.callMode, cData.type);
+                    
+                    // Modifikasi Tolak Panggilan Grup: Hanya berhenti untuk User yang menolak
+                    if (cData.type === 'group') {
+                        await updateDoc(doc(db, "calls", currentCallDocId), { calleeMembers: arrayRemove(currentUser.uid) });
+                        if (cData.calleeMembers.length <= 1) { // Semua callee menolak
+                            await updateDoc(doc(db, "calls", currentCallDocId), { status: 'rejected' });
+                            await logMissedCallToChat(cData.callerId, cData.calleeId, cData.callMode, cData.type);
+                        }
+                    } else {
+                        await logMissedCallToChat(cData.callerId, cData.calleeId, cData.callMode, cData.type);
+                        await updateDoc(doc(db, "calls", currentCallDocId), { status: 'rejected' });
+                    }
                 }
-                await updateDoc(doc(db, "calls", currentCallDocId), { status: 'rejected' });
+                currentCallDocId = null;
             }
         });
         
         document.getElementById('btn-end-call').addEventListener('click', async () => { 
             if (currentCallDocId) {
                 try {
-                    const callDoc = await getDoc(doc(db, "calls", currentCallDocId));
+                    const callDocRef = doc(db, "calls", currentCallDocId);
+                    const callDoc = await getDoc(callDocRef);
                     if (callDoc.exists()) {
                         const cData = callDoc.data();
-                        if (cData.status === 'calling') {
+                        if (cData.status === 'calling' && cData.callerId === currentUser.uid) {
                             await logMissedCallToChat(cData.callerId, cData.calleeId, cData.callMode, cData.type);
                         }
                     }
-                    await updateDoc(doc(db, "calls", currentCallDocId), { status: 'ended' });
+                    await updateDoc(callDocRef, { status: 'ended' });
                 } catch (e) {}
             }
             stopRingtone(); stopCallCleanup(); 
@@ -1209,6 +1271,7 @@
             if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
             if (callSnapshotUnsub) { callSnapshotUnsub(); callSnapshotUnsub = null; }
             currentCallDocId = null;
+            callerIceQueue = [];
         }
 
         // ================= STICKER & EMOJI SYSTEM =================
