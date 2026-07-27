@@ -360,7 +360,10 @@
             <!-- Login Form -->
             <div id="login-form">
                 <input type="email" id="login-email" class="modal-input" placeholder="Email" autocomplete="off" style="margin-bottom: 10px;">
-                <input type="password" id="login-password" class="modal-input" placeholder="Password" style="margin-bottom: 15px;">
+                <input type="password" id="login-password" class="modal-input" placeholder="Password" style="margin-bottom: 10px;">
+                <div style="text-align: right; margin-bottom: 15px;">
+                    <span style="font-size: 13px; color: var(--text-preview); cursor: pointer;" onclick="toggleAuthMode('forgot')">Lupa Password?</span>
+                </div>
                 <button id="btn-login-email" class="modal-btn" style="margin-bottom: 10px;">Masuk</button>
                 <p style="font-size: 13px; color: var(--text-preview); cursor: pointer;" onclick="toggleAuthMode('register')">Belum punya akun? Daftar di sini</p>
             </div>
@@ -373,6 +376,14 @@
                 <input type="password" id="reg-repassword" class="modal-input" placeholder="Ketik Ulang Password" style="margin-bottom: 15px;">
                 <button id="btn-register" class="modal-btn" style="margin-bottom: 10px; background: #97C1A9;">Daftar</button>
                 <p style="font-size: 13px; color: var(--text-preview); cursor: pointer;" onclick="toggleAuthMode('login')">Sudah punya akun? Masuk di sini</p>
+            </div>
+
+            <!-- Forgot Password Form -->
+            <div id="forgot-form" style="display: none;">
+                <p style="font-size: 14px; color: var(--text-preview); margin-bottom: 15px;">Masukkan email Anda untuk mereset password.</p>
+                <input type="email" id="forgot-email" class="modal-input" placeholder="Email" autocomplete="off" style="margin-bottom: 15px;">
+                <button id="btn-forgot-password" class="modal-btn" style="margin-bottom: 10px; background: #FFB5E8; color: #333;">Kirim Link Reset</button>
+                <p style="font-size: 13px; color: var(--text-preview); cursor: pointer;" onclick="toggleAuthMode('login')">Kembali ke Login</p>
             </div>
         </div>
     </div>
@@ -606,7 +617,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, setPersistence, browserLocalPersistence, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, setPersistence, browserLocalPersistence, signOut, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, where, getDocs, getDoc, deleteDoc, arrayUnion, arrayRemove, limit, or } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
@@ -889,11 +900,15 @@
 
         // ================= AUTH TOGGLE & SYSTEM =================
         window.toggleAuthMode = function(mode) {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('register-form').style.display = 'none';
+            document.getElementById('forgot-form').style.display = 'none';
+
             if (mode === 'register') {
-                document.getElementById('login-form').style.display = 'none';
                 document.getElementById('register-form').style.display = 'block';
+            } else if (mode === 'forgot') {
+                document.getElementById('forgot-form').style.display = 'block';
             } else {
-                document.getElementById('register-form').style.display = 'none';
                 document.getElementById('login-form').style.display = 'block';
             }
         };
@@ -942,6 +957,25 @@
             } catch (e) {
                 alert("Gagal mendaftar: " + e.message);
                 btn.innerText = 'Daftar'; btn.disabled = false;
+            }
+        });
+
+        // Fungsi Lupa Password
+        document.getElementById('btn-forgot-password').addEventListener('click', async () => {
+            const email = document.getElementById('forgot-email').value.trim();
+            if (!email) return alert('Silakan isi email Anda!');
+            
+            const btn = document.getElementById('btn-forgot-password');
+            btn.innerText = 'Mengirim...'; btn.disabled = true;
+
+            try {
+                await sendPasswordResetEmail(auth, email);
+                alert("Link reset password telah dikirim ke email Anda. Silakan periksa kotak masuk atau folder spam Anda.");
+                toggleAuthMode('login');
+            } catch (e) {
+                alert("Gagal mengirim link reset: " + e.message);
+            } finally {
+                btn.innerText = 'Kirim Link Reset'; btn.disabled = false;
             }
         });
 
