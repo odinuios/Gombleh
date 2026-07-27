@@ -67,7 +67,7 @@
         .hidden { display: none !important; }
 
         /* FAB & Dropdown */
-        .fab-container { position: absolute; right: 20px; bottom: 85px; display: inline-block; z-index: 100; }
+        .fab-container { position: absolute; right: 20px; bottom: 85px; display: inline-block; z-index: 100; transition: opacity 0.2s; }
         .dropdown-menu { display: none; position: absolute; right: 0; bottom: 50px; background-color: var(--bg-sidebar); box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 10; border-radius: 12px; width: 160px; overflow: hidden; animation: popIn 0.2s ease; border: 1px solid var(--border-color); }
         .dropdown-menu.show { display: flex; flex-direction: column; }
         .dropdown-item { padding: 12px 16px; display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-main); font-size: 14px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: 0.2s;}
@@ -364,7 +364,7 @@
                     <div id="friend-requests-container" style="background: var(--input-bg);"></div>
                     <div class="list-container" id="contact-list-container"></div>
 
-                    <div class="fab-container">
+                    <div class="fab-container" id="fab-container">
                         <button id="btn-main-plus" style="background: #B28DFF; color: white; border: none; border-radius: 50%; width: 55px; height: 55px; font-size: 24px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.2s;">+</button>
                         <div id="dropdown-action-menu" class="dropdown-menu">
                             <button class="dropdown-item" id="menu-add-friend">
@@ -843,7 +843,11 @@
             });
         });
 
-        document.getElementById('btn-back-mobile').addEventListener('click', () => { document.getElementById('chat-main-area').classList.remove('active-mobile'); activeTargetId = null; });
+        document.getElementById('btn-back-mobile').addEventListener('click', () => { 
+            document.getElementById('chat-main-area').classList.remove('active-mobile'); 
+            activeTargetId = null; 
+            document.getElementById('fab-container').style.display = 'inline-block';
+        });
         document.getElementById('btn-login').addEventListener('click', () => { setPersistence(auth, browserLocalPersistence).then(() => signInWithPopup(auth, provider)).catch(e => alert(e.message)); });
         document.getElementById('btn-logout').addEventListener('click', () => { signOut(auth).then(() => location.reload()); });
 
@@ -1145,6 +1149,7 @@
                             
                             setupChatNotificationListener(chatId, latest.name, groupPhoto, 'group');
                             document.getElementById(`chat-item-${cData.uid}`)?.remove(); document.getElementById(`contact-item-${cData.uid}`)?.remove();
+                            document.getElementById(`contact-chat-item-${cData.uid}`)?.remove();
                             
                             onSnapshot(collection(db, "chats", chatId, "messages"), (msgSnap) => {
                                 let unread = 0; msgSnap.forEach(mDoc => { if (mDoc.data().senderId !== currentUser.uid && mDoc.data().status !== 'read') unread++; });
@@ -1152,7 +1157,19 @@
                                 if (badgeEl) badgeEl.style.display = unread > 0 ? 'inline-block' : 'none', badgeEl.innerText = unread;
                             });
 
-                            const mkContact = () => { const d = document.createElement('div'); d.className = 'list-item item-group'; d.id = `contact-item-${cData.uid}`; d.innerHTML = `${groupAvatarHtml}<div class="info"><p class="name">${latest.name}</p><p class="preview">Grup Chat</p></div>`; d.addEventListener('click', () => openChat(latest.uid, latest.name, latest.photoURL, 'group')); return d; };
+                            const mkContact = () => { 
+                                const w = document.createElement('div'); w.className = 'chat-item-wrapper item-group'; w.id = `contact-chat-item-${cData.uid}`;
+                                const delBtn = document.createElement('div'); delBtn.className = 'chat-delete-action'; delBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+                                delBtn.addEventListener('click', async (e) => { e.stopPropagation(); if (confirm('Hapus chat?')) { const msgs = await getDocs(collection(db, "chats", chatId, "messages")); msgs.docs.forEach(d => deleteDoc(d.ref)); w.remove(); } });
+                                
+                                const d = document.createElement('div'); d.className = 'list-item chat-list-item'; d.innerHTML = `${groupAvatarHtml}<div class="info"><p class="name">${latest.name}</p><p class="preview">Grup Chat</p></div>`; 
+                                
+                                let sX=0, cX=0, swiping=false;
+                                d.addEventListener('touchstart', e => { sX=e.touches[0].clientX; swiping=true; }); d.addEventListener('touchmove', e => { if(!swiping) return; cX=e.touches[0].clientX; let diff=cX-sX; if(diff<0 && diff>-100) d.style.transform=`translateX(${diff}px)`; }); d.addEventListener('touchend', () => { swiping=false; let diff=cX-sX; d.style.transform=(diff<-50)?`translateX(-90px)`:`translateX(0px)`; sX=0;cX=0; });
+                                d.addEventListener('click', () => { d.style.transform=`translateX(0px)`; openChat(latest.uid, latest.name, latest.photoURL, 'group'); });
+                                
+                                w.appendChild(delBtn); w.appendChild(d); return w; 
+                            };
                             const mkChat = () => {
                                 const w = document.createElement('div'); w.className = 'chat-item-wrapper item-group'; w.id = `chat-item-${cData.uid}`;
                                 const delBtn = document.createElement('div'); delBtn.className = 'chat-delete-action'; delBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
@@ -1171,6 +1188,7 @@
                             if (!uDoc.exists()) return; const latest = uDoc.data(); const chatId = currentUser.uid < latest.uid ? `${currentUser.uid}_${latest.uid}` : `${latest.uid}_${currentUser.uid}`;
                             setupChatNotificationListener(chatId, latest.name, latest.photoURL, 'private');
                             document.getElementById(`chat-item-${cData.uid}`)?.remove(); document.getElementById(`contact-item-${cData.uid}`)?.remove();
+                            document.getElementById(`contact-chat-item-${cData.uid}`)?.remove();
 
                             onSnapshot(collection(db, "chats", chatId, "messages"), (msgSnap) => {
                                 let unread = 0; msgSnap.forEach(mDoc => { if (mDoc.data().senderId === latest.uid && mDoc.data().status !== 'read') unread++; });
@@ -1179,11 +1197,20 @@
                             });
 
                             const mkContact = () => { 
-                                const d = document.createElement('div'); d.className = 'list-item item-private'; d.id = `contact-item-${cData.uid}`; 
-                                d.innerHTML = `<img src="${latest.photoURL || 'https://via.placeholder.com/45'}" class="avatar" style="cursor:pointer;" title="Ketuk profil untuk info"><div class="info" style="cursor:pointer;"><p class="name">${latest.name || 'User'}</p><p class="preview" style="font-size:13px;">Kontak Pribadi</p></div>`; 
+                                const w = document.createElement('div'); w.className = 'chat-item-wrapper item-private'; w.id = `contact-chat-item-${cData.uid}`;
+                                const delBtn = document.createElement('div'); delBtn.className = 'chat-delete-action'; delBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+                                delBtn.addEventListener('click', async (e) => { e.stopPropagation(); if (confirm('Hapus chat?')) { const msgs = await getDocs(collection(db, "chats", chatId, "messages")); msgs.docs.forEach(d => deleteDoc(d.ref)); w.remove(); } });
+                                
+                                const d = document.createElement('div'); d.className = 'list-item chat-list-item'; 
+                                d.innerHTML = `<img src="${latest.photoURL || 'https://via.placeholder.com/45'}" class="avatar" style="cursor:pointer;" title="Ketuk profil untuk info"><div class="info"><p class="name">${latest.name || 'User'}</p><p class="preview" style="font-size:13px;">Kontak Pribadi</p></div>`; 
+                                
                                 d.querySelector('.avatar').addEventListener('click', (e) => { e.stopPropagation(); showUserProfile(latest.uid); });
-                                d.querySelector('.info').addEventListener('click', () => openChat(latest.uid, latest.name, latest.photoURL, 'private')); 
-                                return d; 
+                                
+                                let sX=0, cX=0, swiping=false;
+                                d.addEventListener('touchstart', e => { sX=e.touches[0].clientX; swiping=true; }); d.addEventListener('touchmove', e => { if(!swiping) return; cX=e.touches[0].clientX; let diff=cX-sX; if(diff<0 && diff>-100) d.style.transform=`translateX(${diff}px)`; }); d.addEventListener('touchend', () => { swiping=false; let diff=cX-sX; d.style.transform=(diff<-50)?`translateX(-90px)`:`translateX(0px)`; sX=0;cX=0; });
+                                
+                                d.querySelector('.info').addEventListener('click', () => { d.style.transform=`translateX(0px)`; openChat(latest.uid, latest.name, latest.photoURL, 'private'); });
+                                w.appendChild(delBtn); w.appendChild(d); return w; 
                             };
 
                             const mkChat = () => {
@@ -1239,6 +1266,7 @@
         function openChat(id, name, photo, type) {
             activeTargetId = id; activeTargetName = name; activeTargetType = type; activeTargetPhoto = photo;
             document.getElementById('chat-empty-state').style.display = 'none'; document.getElementById('chat-active-state').style.display = 'flex';
+            document.getElementById('fab-container').style.display = 'none';
             
             let avatarHtml = '';
             if (type === 'group') {
@@ -1430,59 +1458,92 @@
             document.getElementById('group-members-modal').style.display = 'none'; document.getElementById('chat-active-state').style.display = 'none'; document.getElementById('chat-empty-state').style.display = 'flex'; activeTargetId = null;
         });
 
-        // ================= RIWAYAT PANGGILAN TEROPTIMASI TANPA INDEX COMPOSITE =================
-        let callHistoryState = { caller: [], callee: [] };
+        // ================= RIWAYAT PANGGILAN TERHUBUNG KE CHAT (REALTIME DARI CHAT MESSAGES & CALLS) =================
+        let callHistoryState = { chats: [], calls: {} };
+
         function renderCallHistory() {
-            let allCalls = [...callHistoryState.caller, ...callHistoryState.callee];
+            let allCallItems = [];
             
-            allCalls.sort((a, b) => {
+            // 1. Ambil riwayat dari pesan tipe 'missed_call' di semua chat yang aktif/tersedia
+            callHistoryState.chats.forEach(chat => {
+                chat.messages.forEach(msg => {
+                    const isOutgoing = msg.senderId === currentUser.uid;
+                    let callMode = msg.text.includes('Video') ? 'video' : 'voice';
+                    allCallItems.push({
+                        id: msg.id,
+                        targetId: chat.targetId,
+                        targetName: chat.targetName,
+                        type: chat.type,
+                        callMode: callMode,
+                        isOutgoing: isOutgoing,
+                        isMissed: !isOutgoing && msg.type === 'missed_call',
+                        timestamp: msg.timestamp,
+                        textInfo: msg.text
+                    });
+                });
+            });
+
+            // 2. Ambil juga dari koleksi calls (untuk panggilan biasa yang terhubung/berhasil)
+            Object.values(callHistoryState.calls).forEach(data => {
+                const isOutgoing = data.callerId === currentUser.uid;
+                let targetId = data.type === 'group' ? data.calleeId : (isOutgoing ? data.calleeId : data.callerId);
+                let targetName = data.type === 'group' ? (data.groupName || 'Grup') : (isOutgoing ? (data.calleeName || 'Seseorang') : data.callerName);
+                
+                allCallItems.push({
+                    id: data.id,
+                    targetId: targetId,
+                    targetName: targetName,
+                    type: data.type || 'private',
+                    callMode: data.callMode || 'voice',
+                    isOutgoing: isOutgoing,
+                    isMissed: !isOutgoing && data.status !== 'answered' && data.status !== 'calling',
+                    timestamp: data.timestamp,
+                    textInfo: data.status
+                });
+            });
+
+            allCallItems.sort((a, b) => {
                 let ta = a.timestamp ? a.timestamp.toMillis() : 0;
                 let tb = b.timestamp ? b.timestamp.toMillis() : 0;
                 return tb - ta;
             });
             
             let uniqueCalls = []; let ids = new Set();
-            for(let c of allCalls) { if(!ids.has(c.id)) { ids.add(c.id); uniqueCalls.push(c); } }
-            uniqueCalls = uniqueCalls.slice(0, 20);
+            for(let c of allCallItems) { if(!ids.has(c.id)) { ids.add(c.id); uniqueCalls.push(c); } }
+            uniqueCalls = uniqueCalls.slice(0, 30);
             
+            const callHistoryContainer = document.getElementById('call-history-container');
+            const emptyCalls = document.getElementById('empty-calls');
             document.querySelectorAll('.call-history-item').forEach(el => el.remove());
-            if(uniqueCalls.length === 0) { emptyCalls.style.display = 'block'; } 
-            else {
-                emptyCalls.style.display = 'none';
-                uniqueCalls.forEach(data => {
-                    const isOutgoing = data.callerId === currentUser.uid;
-                    let targetId, targetName;
-                    
-                    if (data.type === 'group') {
-                        targetId = data.calleeId;
-                        targetName = data.groupName || 'Grup';
-                    } else {
-                        targetId = isOutgoing ? data.calleeId : data.callerId;
-                        targetName = isOutgoing ? (data.calleeName || 'Seseorang') : data.callerName;
-                    }
-
-                    const isMissed = !isOutgoing && data.status !== 'answered' && data.status !== 'calling';
-                    const timeStr = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+            
+            if(uniqueCalls.length === 0) { 
+                if (emptyCalls) emptyCalls.style.display = 'block'; 
+            } else {
+                if (emptyCalls) emptyCalls.style.display = 'none';
+                uniqueCalls.forEach(item => {
+                    const timeStr = item.timestamp ? new Date(item.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
                     const div = document.createElement('div');
                     div.className = 'list-item call-history-item';
                     
-                    let callStatusIcon = isOutgoing ? '↗️' : (isMissed ? '↙️ (Missed)' : '↙️');
-                    let callTypeIcon = data.callMode === 'video' ? '📹' : '📞';
-                    let textColor = isMissed ? 'color: #FFADAD;' : 'color: var(--text-preview);';
+                    let callStatusIcon = item.isOutgoing ? '↗️ Keluar' : (item.isMissed ? '↙️ Tidak Terjawab' : '↙️ Masuk');
+                    let callTypeIcon = item.callMode === 'video' ? '📹' : '📞';
+                    let textColor = item.isMissed ? 'color: #FFADAD;' : 'color: var(--text-preview);';
                     
                     div.innerHTML = `
-                        <div class="avatar" style="background:#dfe5e7;">${targetName.charAt(0)}</div>
+                        <div class="avatar" style="background:#dfe5e7;">${item.targetName.charAt(0)}</div>
                         <div class="info">
-                            <p class="name" style="${isMissed ? 'color: #FFADAD;' : ''}">${targetName}</p>
-                            <p class="preview" style="${textColor}">${callStatusIcon} ${timeStr}</p>
+                            <p class="name" style="${item.isMissed ? 'color: #FFADAD;' : ''}">${item.targetName}</p>
+                            <p class="preview" style="${textColor}">${callStatusIcon} • ${timeStr}</p>
                         </div>
                         <div class="call-icon-indicator">${callTypeIcon}</div>
                     `;
 
                     div.addEventListener('click', () => {
-                        activeTargetId = targetId; activeTargetName = targetName; activeTargetType = data.type || 'private';
-                        startCall(data.callMode);
+                        activeTargetId = item.targetId; 
+                        activeTargetName = item.targetName; 
+                        activeTargetType = item.type;
+                        startCall(item.callMode);
                     });
 
                     callHistoryContainer.appendChild(div);
@@ -1493,17 +1554,51 @@
         function listenForCallHistory() {
             if (!currentUser) return;
             
+            // Dengarkan koleksi calls umum
             const qCaller = query(collection(db, "calls"), where("callerId", "==", currentUser.uid));
             const qCallee = query(collection(db, "calls"), where("calleeMembers", "array-contains", currentUser.uid));
             
             onSnapshot(qCaller, (snap) => {
-                callHistoryState.caller = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                snap.docs.forEach(d => callHistoryState.calls[d.id] = {id: d.id, ...d.data()});
                 renderCallHistory();
             });
             
             onSnapshot(qCallee, (snap) => {
-                callHistoryState.callee = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                snap.docs.forEach(d => callHistoryState.calls[d.id] = {id: d.id, ...d.data()});
                 renderCallHistory();
+            });
+
+            // Dengarkan juga pesan missed_call langsung dari kontak/grup aktif
+            onSnapshot(collection(db, "users", currentUser.uid, "contacts"), (contactSnap) => {
+                contactSnap.forEach(cDoc => {
+                    const cData = cDoc.data();
+                    const chatId = cData.type === 'group' ? cData.uid : (currentUser.uid < cData.uid ? `${currentUser.uid}_${cData.uid}` : `${cData.uid}_${currentUser.uid}`);
+                    
+                    onSnapshot(collection(db, "chats", chatId, "messages"), (msgSnap) => {
+                        let msgs = [];
+                        msgSnap.forEach(m => {
+                            let mData = m.data();
+                            if (mData.type === 'missed_call' || mData.text?.includes('Panggilan')) {
+                                msgs.push({ id: m.id, ...mData });
+                            }
+                        });
+                        
+                        // Update state chat messages untuk riwayat panggilan
+                        let chatIndex = callHistoryState.chats.findIndex(ch => ch.chatId === chatId);
+                        if (chatIndex >= 0) {
+                            callHistoryState.chats[chatIndex].messages = msgs;
+                        } else {
+                            callHistoryState.chats.push({
+                                chatId: chatId,
+                                targetId: cData.uid,
+                                targetName: cData.name || 'Kontak',
+                                type: cData.type || 'private',
+                                messages: msgs
+                            });
+                        }
+                        renderCallHistory();
+                    });
+                });
             });
         }
 
