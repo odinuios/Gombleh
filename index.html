@@ -208,7 +208,7 @@
         <div class="modal-box" style="text-align:center;">
             <div class="modal-header"><span>Profil Pengguna</span><button class="modal-close" onclick="document.getElementById('user-profile-modal').style.display='none'">✖</button></div>
             <div class="modal-content">
-                <img id="up-avatar" src="https://via.placeholder.com/100" style="width:120px; height:120px; border-radius:50%; margin:10px auto; object-fit:cover; border:3px solid #B28DFF;">
+                <img id="up-avatar" src="https://via.placeholder.com/100" style="width:120px; height:120px; border-radius:50%; margin:10px auto; object-fit:cover; border:3px solid #B28DFF;" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'">
                 <h3 id="up-name" style="margin:10px 0 5px 0;"></h3>
                 <p id="up-email" style="color:var(--text-preview); font-size:14px; margin:0 0 20px 0;"></p>
                 <div style="text-align:left; background:var(--input-bg); padding:15px; border-radius:8px;">
@@ -301,7 +301,7 @@
         <div class="status-progress-bar" id="status-progress-bar"></div>
         <div class="full-modal-header">
             <div style="display:flex; align-items:center; gap:10px;">
-                <img id="vs-avatar" src="https://via.placeholder.com/40" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+                <img id="vs-avatar" src="https://via.placeholder.com/40" style="width:40px; height:40px; border-radius:50%; object-fit:cover;" onerror="this.src='https://ui-avatars.com/api/?name=User&background=random&color=fff&size=128'">
                 <div>
                     <h4 id="vs-name" style="margin:0; font-size:15px; text-shadow:0 1px 2px rgba(0,0,0,0.8);">Nama</h4>
                     <p id="vs-time" style="margin:0; font-size:12px; color:rgba(255,255,255,0.8); text-shadow:0 1px 2px rgba(0,0,0,0.8);">Waktu</p>
@@ -339,7 +339,7 @@
             </div>
             <div class="modal-content" style="padding:0; display:flex; flex-direction:column; max-height:60vh; overflow:hidden;">
                 <div style="text-align: center; padding: 15px; background: var(--bg-header); border-bottom: 1px solid var(--border-color);">
-                    <img id="group-info-photo" src="https://via.placeholder.com/80" class="profile-avatar" title="Ketuk untuk ubah foto grup" style="width: 90px; height: 90px; margin: 0 auto; display: block; border-radius: 50%; cursor: pointer; object-fit: cover; border: 3px solid #B28DFF;">
+                    <img id="group-info-photo" src="https://via.placeholder.com/80" class="profile-avatar" title="Ketuk untuk ubah foto grup" style="width: 90px; height: 90px; margin: 0 auto; display: block; border-radius: 50%; cursor: pointer; object-fit: cover; border: 3px solid #B28DFF;" onerror="this.src='https://ui-avatars.com/api/?name=Group&background=00a884&color=fff&size=128'">
                     <input type="file" id="input-group-photo" style="display:none;" accept="image/*">
                     <p style="font-size: 11px; color: var(--text-preview); margin: 5px 0 0 0;">(Ketuk foto untuk mengubah)</p>
                 </div>
@@ -1023,12 +1023,15 @@
                     type = mediaFile.type.startsWith('video/') ? 'video' : 'image';
                 }
 
-                const fallbackStatusPhoto = currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName || 'User')}&background=random&color=fff&size=128`;
+                // Ambil data user terbaru langsung dari database agar foto profil selalu sinkron
+                const uDocSnap = await getDoc(doc(db, "users", currentUser.uid));
+                const uData = uDocSnap.exists() ? uDocSnap.data() : {};
+                const freshPhoto = uData.photoURL || currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName || 'User')}&background=random&color=fff&size=128`;
 
                 await addDoc(collection(db, "statuses"), {
                     uid: currentUser.uid,
                     name: currentUser.displayName,
-                    photoURL: fallbackStatusPhoto,
+                    photoURL: freshPhoto,
                     text: text,
                     mediaUrl: mediaUrl,
                     type: type,
@@ -1053,7 +1056,7 @@
                 
                 const q = query(collection(db, "statuses"), orderBy("expiresAt", "desc"));
                 
-                onSnapshot(q, (statusSnap) => {
+                onSnapshot(q, async (statusSnap) => {
                     const statusFeed = document.getElementById('status-feed-container');
                     const emptyFeed = document.getElementById('empty-statuses');
                     
@@ -1061,13 +1064,22 @@
                     
                     let userStatuses = {}; 
                     
-                    statusSnap.forEach(docSnap => {
+                    for (let docSnap of statusSnap.docs) {
                         const sData = docSnap.data();
                         if (sData.expiresAt > Date.now() && (myContactsIds.includes(sData.uid) || sData.uid === currentUser.uid)) {
+                            // Ambil foto profil terbaru langsung dari dokumen user pembuat status agar selalu update
+                            let activePhoto = sData.photoURL;
+                            try {
+                                const ownerDoc = await getDoc(doc(db, "users", sData.uid));
+                                if (ownerDoc.exists() && ownerDoc.data().photoURL) {
+                                    activePhoto = ownerDoc.data().photoURL;
+                                }
+                            } catch(e) {}
+
                             if (!userStatuses[sData.uid]) userStatuses[sData.uid] = [];
-                            userStatuses[sData.uid].push({id: docSnap.id, ...sData});
+                            userStatuses[sData.uid].push({id: docSnap.id, ...sData, photoURL: activePhoto});
                         }
-                    });
+                    }
 
                     if (Object.keys(userStatuses).length > 0) {
                         emptyFeed.style.display = 'none';
@@ -1128,7 +1140,7 @@
             contentDiv.innerHTML = ''; 
         }
 
-        function renderCurrentStatus() {
+        async function renderCurrentStatus() {
             if (currentStatusIndex >= currentStatusList.length) {
                 closeStatusViewer();
                 return;
@@ -1136,7 +1148,17 @@
             
             const st = currentStatusList[currentStatusIndex];
             document.getElementById('vs-name').innerText = st.name;
-            const fallbackStatusAvatar = st.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(st.name || 'User')}&background=random&color=fff&size=128`;
+            
+            // Perbarui foto profil real-time saat melihat status
+            let currentAvatarPhoto = st.photoURL;
+            try {
+                const ownerDoc = await getDoc(doc(db, "users", st.uid));
+                if (ownerDoc.exists() && ownerDoc.data().photoURL) {
+                    currentAvatarPhoto = ownerDoc.data().photoURL;
+                }
+            } catch(e) {}
+
+            const fallbackStatusAvatar = currentAvatarPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(st.name || 'User')}&background=random&color=fff&size=128`;
             document.getElementById('vs-avatar').src = fallbackStatusAvatar;
             document.getElementById('vs-time').innerText = st.timestamp ? new Date(st.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Baru saja';
             
@@ -1775,7 +1797,7 @@
 
         document.getElementById('btn-cancel-call-selection').addEventListener('click', exitCallSelectionMode);
         
-        // Perbaikan utama tombol hapus banyak pada riwayat panggilan
+        // Perbaikan tombol hapus banyak pada riwayat panggilan
         document.getElementById('btn-delete-selected-calls').addEventListener('click', async () => {
             if (selectedCallIds.size === 0) return;
             if (!confirm(`Hapus ${selectedCallIds.size} riwayat panggilan terpilih?`)) return;
