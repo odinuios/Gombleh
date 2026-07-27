@@ -283,10 +283,10 @@
                 <textarea id="status-text-input" class="modal-input" placeholder="Tulis sesuatu..." rows="4" style="resize:none; font-family:inherit; font-size:16px; border-radius:12px;"></textarea>
                 <div style="display:flex; gap:10px; margin-bottom:15px;">
                     <input type="file" id="status-media-input" accept="image/*,video/*" style="display:none;">
-                    <button class="modal-btn" style="background:var(--input-bg); color:var(--text-main); border:1px solid var(--border-color); border-radius: 12px; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="document.getElementById('status-media-input').click()">
+                    <label for="status-media-input" class="modal-btn" style="background:var(--input-bg); color:var(--text-main); border:1px solid var(--border-color); border-radius: 12px; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B28DFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                         Tambah Foto/Video
-                    </button>
+                    </label>
                 </div>
                 <div id="status-media-preview" style="display:none; margin-bottom:15px; text-align:center;">
                     <span style="font-size:12px; color:var(--text-preview); background:var(--input-bg); padding:5px 10px; border-radius:15px;" id="status-media-name">Media terpilih</span>
@@ -360,10 +360,7 @@
             <!-- Login Form -->
             <div id="login-form">
                 <input type="email" id="login-email" class="modal-input" placeholder="Email" autocomplete="off" style="margin-bottom: 10px;">
-                <input type="password" id="login-password" class="modal-input" placeholder="Password" style="margin-bottom: 10px;">
-                <div style="text-align: right; margin-bottom: 15px;">
-                    <span style="font-size: 13px; color: var(--text-preview); cursor: pointer;" onclick="toggleAuthMode('forgot')">Lupa Password?</span>
-                </div>
+                <input type="password" id="login-password" class="modal-input" placeholder="Password" style="margin-bottom: 15px;">
                 <button id="btn-login-email" class="modal-btn" style="margin-bottom: 10px;">Masuk</button>
                 <p style="font-size: 13px; color: var(--text-preview); cursor: pointer;" onclick="toggleAuthMode('register')">Belum punya akun? Daftar di sini</p>
             </div>
@@ -376,14 +373,6 @@
                 <input type="password" id="reg-repassword" class="modal-input" placeholder="Ketik Ulang Password" style="margin-bottom: 15px;">
                 <button id="btn-register" class="modal-btn" style="margin-bottom: 10px; background: #97C1A9;">Daftar</button>
                 <p style="font-size: 13px; color: var(--text-preview); cursor: pointer;" onclick="toggleAuthMode('login')">Sudah punya akun? Masuk di sini</p>
-            </div>
-
-            <!-- Forgot Password Form -->
-            <div id="forgot-form" style="display: none;">
-                <p style="font-size: 14px; color: var(--text-preview); margin-bottom: 15px;">Masukkan email Anda untuk mereset password.</p>
-                <input type="email" id="forgot-email" class="modal-input" placeholder="Email" autocomplete="off" style="margin-bottom: 15px;">
-                <button id="btn-forgot-password" class="modal-btn" style="margin-bottom: 10px; background: #FFB5E8; color: #333;">Kirim Link Reset</button>
-                <p style="font-size: 13px; color: var(--text-preview); cursor: pointer;" onclick="toggleAuthMode('login')">Kembali ke Login</p>
             </div>
         </div>
     </div>
@@ -549,7 +538,7 @@
                         </div>
                         <div class="ep-content active" id="ep-emoji-content"></div>
                         <div class="ep-content" id="ep-sticker-content">
-                            <button class="btn-add-sticker" id="trigger-add-sticker" title="Tambah Sticker Personal">+</button>
+                            <label for="input-add-sticker" class="btn-add-sticker" title="Tambah Sticker Personal" style="cursor:pointer; display:flex;">+</label>
                             <input type="file" id="input-add-sticker" style="display:none;" accept="image/*">
                             <div id="personal-stickers-list" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
                         </div>
@@ -560,15 +549,15 @@
                     </button>
 
                     <div id="attach-menu" class="dropdown-menu" style="bottom: 50px; left: 50px; width: 160px; z-index: 10;">
-                        <button class="dropdown-item" id="attach-photo">
+                        <label class="dropdown-item" for="input-photo" style="cursor:pointer; margin:0;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CAFFBF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Foto
-                        </button>
-                        <button class="dropdown-item" id="attach-camera">
+                        </label>
+                        <label class="dropdown-item" for="input-camera" style="cursor:pointer; margin:0;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFD6A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg> Kamera
-                        </button>
-                        <button class="dropdown-item" id="attach-file">
+                        </label>
+                        <label class="dropdown-item" for="input-file" style="cursor:pointer; margin:0;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9BF6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg> File
-                        </button>
+                        </label>
                         <button class="dropdown-item" id="attach-location">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFADAD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Lokasi
                         </button>
@@ -617,7 +606,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, setPersistence, browserLocalPersistence, signOut, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, setPersistence, browserLocalPersistence, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, where, getDocs, getDoc, deleteDoc, arrayUnion, arrayRemove, limit, or } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
@@ -820,10 +809,6 @@
             }
         });
 
-        document.getElementById('attach-photo').addEventListener('click', () => inputPhoto.click());
-        document.getElementById('attach-camera').addEventListener('click', () => inputCamera.click());
-        document.getElementById('attach-file').addEventListener('click', () => inputFile.click());
-
         async function uploadToCloudinary(file) {
             const CLOUD_NAME = "jgcuvsst"; const UPLOAD_PRESET = "gombleh";
             const formData = new FormData(); formData.append("file", file); formData.append("upload_preset", UPLOAD_PRESET);
@@ -900,15 +885,11 @@
 
         // ================= AUTH TOGGLE & SYSTEM =================
         window.toggleAuthMode = function(mode) {
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('register-form').style.display = 'none';
-            document.getElementById('forgot-form').style.display = 'none';
-
             if (mode === 'register') {
+                document.getElementById('login-form').style.display = 'none';
                 document.getElementById('register-form').style.display = 'block';
-            } else if (mode === 'forgot') {
-                document.getElementById('forgot-form').style.display = 'block';
             } else {
+                document.getElementById('register-form').style.display = 'none';
                 document.getElementById('login-form').style.display = 'block';
             }
         };
@@ -944,38 +925,23 @@
 
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
-                await updateProfile(userCredential.user, { displayName: name });
+                
+                // Set default avatar otomatis dari nama pendaftar
+                const defaultPhoto = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&size=128`;
+                
+                await updateProfile(userCredential.user, { displayName: name, photoURL: defaultPhoto });
                 
                 // Simpan paksa ke database secara langsung agar tidak terjadi delay
                 await setDoc(doc(db, "users", userCredential.user.uid), { 
                     uid: userCredential.user.uid, 
                     name: name, 
                     email: email, 
-                    photoURL: userCredential.user.photoURL || null 
+                    photoURL: defaultPhoto 
                 }, { merge: true });
 
             } catch (e) {
                 alert("Gagal mendaftar: " + e.message);
                 btn.innerText = 'Daftar'; btn.disabled = false;
-            }
-        });
-
-        // Fungsi Lupa Password
-        document.getElementById('btn-forgot-password').addEventListener('click', async () => {
-            const email = document.getElementById('forgot-email').value.trim();
-            if (!email) return alert('Silakan isi email Anda!');
-            
-            const btn = document.getElementById('btn-forgot-password');
-            btn.innerText = 'Mengirim...'; btn.disabled = true;
-
-            try {
-                await sendPasswordResetEmail(auth, email);
-                alert("Link reset password telah dikirim ke email Anda. Silakan periksa kotak masuk atau folder spam Anda.");
-                toggleAuthMode('login');
-            } catch (e) {
-                alert("Gagal mengirim link reset: " + e.message);
-            } finally {
-                btn.innerText = 'Kirim Link Reset'; btn.disabled = false;
             }
         });
 
@@ -2093,7 +2059,6 @@
         });
 
         const inputAddSticker = document.getElementById('input-add-sticker');
-        document.getElementById('trigger-add-sticker').addEventListener('click', () => inputAddSticker.click());
 
         function loadPersonalStickers() {
             const list = document.getElementById('personal-stickers-list');
@@ -2117,15 +2082,15 @@
 
         inputAddSticker.addEventListener('change', async (e) => {
             const file = e.target.files[0]; if (!file) return;
-            const btnAdd = document.getElementById('trigger-add-sticker');
-            btnAdd.innerText = '⏳';
+            const btnAdd = document.querySelector('label[for="input-add-sticker"]');
+            if (btnAdd) btnAdd.innerText = '⏳';
             try {
                 const url = await uploadToCloudinary(file);
                 let stickers = JSON.parse(localStorage.getItem('my_stickers') || '[]');
                 stickers.push(url); localStorage.setItem('my_stickers', JSON.stringify(stickers));
                 loadPersonalStickers();
             } catch(error) { alert("Gagal tambah sticker"); }
-            btnAdd.innerText = '+'; e.target.value = '';
+            if (btnAdd) btnAdd.innerText = '+'; e.target.value = '';
         });
 
         const mainPlusBtn = document.getElementById('btn-main-plus');
@@ -2136,6 +2101,22 @@
         document.getElementById('menu-add-friend').addEventListener('click', () => { document.getElementById('add-friend-modal').style.display = 'flex'; actionMenu.classList.remove('show'); });
         document.getElementById('menu-add-group').addEventListener('click', () => { document.getElementById('create-group-modal').style.display = 'flex'; actionMenu.classList.remove('show'); });
         
+        // Trigger input file saat foto profil diklik
+        document.getElementById('profile-avatar-preview').addEventListener('click', () => {
+            document.getElementById('profile-photo-input').click();
+        });
+
+        // Update preview foto profil secara langsung
+        document.getElementById('profile-photo-input').addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    document.getElementById('profile-avatar-preview').src = evt.target.result;
+                }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
         document.getElementById('btn-save-profile').addEventListener('click', async () => {
             const newName = document.getElementById('profile-name-input').value.trim();
             if (!newName) return alert("Nama tidak boleh kosong.");
@@ -2150,6 +2131,44 @@
                 alert("Profil berhasil diperbarui!");
             } catch (error) { alert("Gagal menyimpan profil: " + error.message); } 
             finally { btn.innerText = "Simpan Profil"; btn.disabled = false; }
+        });
+
+        // ================= SWIPE TO BACK GESTURE =================
+        let chatMainStartX = 0;
+        let chatMainCurrentX = 0;
+        const chatMainArea = document.getElementById('chat-main-area');
+
+        chatMainArea.addEventListener('touchstart', (e) => {
+            if (window.innerWidth <= 768 && chatMainArea.classList.contains('active-mobile')) {
+                chatMainStartX = e.touches[0].clientX;
+            }
+        });
+
+        chatMainArea.addEventListener('touchmove', (e) => {
+            if (window.innerWidth <= 768 && chatMainStartX > 0) {
+                chatMainCurrentX = e.touches[0].clientX;
+                let deltaX = chatMainCurrentX - chatMainStartX;
+                
+                if (deltaX > 0) {
+                    chatMainArea.style.transition = 'none';
+                    chatMainArea.style.transform = `translateX(${deltaX}px)`;
+                }
+            }
+        });
+
+        chatMainArea.addEventListener('touchend', (e) => {
+            if (window.innerWidth <= 768 && chatMainStartX > 0) {
+                let deltaX = chatMainCurrentX - chatMainStartX;
+                chatMainArea.style.transition = 'transform 0.3s ease, left 0.3s ease';
+                
+                if (deltaX > 100) {
+                    document.getElementById('btn-back-mobile').click();
+                }
+                
+                chatMainArea.style.transform = `translateX(0px)`;
+                chatMainStartX = 0;
+                chatMainCurrentX = 0;
+            }
         });
 
         setInterval(() => { document.querySelectorAll('vercel-live-feedback, #vercel-live-indicator, [id^="__vercel"]').forEach(el => el.remove()); }, 1000);
