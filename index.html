@@ -351,12 +351,29 @@
         </div>
     </div>
 
-    <!-- Layar Login -->
+    <!-- Layar Login dan Register -->
     <div id="login-screen">
         <div class="login-box">
             <img src="https://raw.githubusercontent.com/odinuios/Gombleh/refs/heads/main/icon.png" alt="Logo Gibah" class="login-logo">
             <h2>Gibah Dolo Yok</h2>
-            <button id="btn-login" class="btn-google">Masuk dengan Google</button>
+            
+            <!-- Login Form -->
+            <div id="login-form">
+                <input type="email" id="login-email" class="modal-input" placeholder="Email" autocomplete="off" style="margin-bottom: 10px;">
+                <input type="password" id="login-password" class="modal-input" placeholder="Password" style="margin-bottom: 15px;">
+                <button id="btn-login-email" class="modal-btn" style="margin-bottom: 10px;">Masuk</button>
+                <p style="font-size: 13px; color: var(--text-preview); cursor: pointer;" onclick="toggleAuthMode('register')">Belum punya akun? Daftar di sini</p>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register-form" style="display: none;">
+                <input type="text" id="reg-name" class="modal-input" placeholder="Nama Lengkap" autocomplete="off" style="margin-bottom: 10px;">
+                <input type="email" id="reg-email" class="modal-input" placeholder="Email" autocomplete="off" style="margin-bottom: 10px;">
+                <input type="password" id="reg-password" class="modal-input" placeholder="Password (Min. 6 karakter)" style="margin-bottom: 10px;">
+                <input type="password" id="reg-repassword" class="modal-input" placeholder="Ketik Ulang Password" style="margin-bottom: 15px;">
+                <button id="btn-register" class="modal-btn" style="margin-bottom: 10px; background: #97C1A9;">Daftar</button>
+                <p style="font-size: 13px; color: var(--text-preview); cursor: pointer;" onclick="toggleAuthMode('login')">Sudah punya akun? Masuk di sini</p>
+            </div>
         </div>
     </div>
 
@@ -589,7 +606,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, setPersistence, browserLocalPersistence, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, updateDoc, where, getDocs, getDoc, deleteDoc, arrayUnion, arrayRemove, limit, or } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
@@ -606,7 +623,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
 
         let currentUser = null;
         let activeTargetId = null; 
@@ -870,7 +886,65 @@
             activeTargetId = null; 
             document.getElementById('fab-container').style.display = 'inline-block';
         });
-        document.getElementById('btn-login').addEventListener('click', () => { setPersistence(auth, browserLocalPersistence).then(() => signInWithPopup(auth, provider)).catch(e => alert(e.message)); });
+
+        // ================= AUTH TOGGLE & SYSTEM =================
+        window.toggleAuthMode = function(mode) {
+            if (mode === 'register') {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('register-form').style.display = 'block';
+            } else {
+                document.getElementById('register-form').style.display = 'none';
+                document.getElementById('login-form').style.display = 'block';
+            }
+        };
+
+        // Fungsi Login Email
+        document.getElementById('btn-login-email').addEventListener('click', () => {
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-password').value;
+            if (!email || !pass) return alert('Silakan isi email dan password!');
+            
+            const btn = document.getElementById('btn-login-email');
+            btn.innerText = 'Memproses...'; btn.disabled = true;
+
+            setPersistence(auth, browserLocalPersistence)
+                .then(() => signInWithEmailAndPassword(auth, email, pass))
+                .catch(e => alert("Gagal login: " + e.message))
+                .finally(() => { btn.innerText = 'Masuk'; btn.disabled = false; });
+        });
+
+        // Fungsi Registrasi Email
+        document.getElementById('btn-register').addEventListener('click', async () => {
+            const name = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const pass = document.getElementById('reg-password').value;
+            const repass = document.getElementById('reg-repassword').value;
+
+            if (!name || !email || !pass || !repass) return alert('Semua kolom harus diisi!');
+            if (pass !== repass) return alert('Password yang Anda masukkan tidak cocok!');
+            if (pass.length < 6) return alert('Password minimal 6 karakter!');
+
+            const btn = document.getElementById('btn-register');
+            btn.innerText = 'Mendaftar...'; btn.disabled = true;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                await updateProfile(userCredential.user, { displayName: name });
+                
+                // Simpan paksa ke database secara langsung agar tidak terjadi delay
+                await setDoc(doc(db, "users", userCredential.user.uid), { 
+                    uid: userCredential.user.uid, 
+                    name: name, 
+                    email: email, 
+                    photoURL: userCredential.user.photoURL || null 
+                }, { merge: true });
+
+            } catch (e) {
+                alert("Gagal mendaftar: " + e.message);
+                btn.innerText = 'Daftar'; btn.disabled = false;
+            }
+        });
+
         document.getElementById('btn-logout').addEventListener('click', () => { signOut(auth).then(() => location.reload()); });
 
         onAuthStateChanged(auth, async (user) => {
@@ -879,7 +953,9 @@
                 document.getElementById('profile-avatar-preview').src = user.photoURL || 'https://via.placeholder.com/120';
                 document.getElementById('my-status-avatar-preview').src = user.photoURL || 'https://via.placeholder.com/45';
                 document.getElementById('profile-name-input').value = user.displayName || '';
+                
                 await setDoc(doc(db, "users", user.uid), { uid: user.uid, name: user.displayName, email: user.email, photoURL: user.photoURL }, { merge: true });
+                
                 requestNotificationPermission(); loadSidebarItems(); listenForIncomingCalls(); listenForFriendRequests(); listenForCallHistory(); loadPersonalStickers(); loadSavedWallpaper(); loadSavedTheme(); listenForStatuses();
             } else { currentUser = null; loginScreen.classList.remove('hidden'); appContainer.classList.add('hidden'); }
         });
