@@ -8,7 +8,35 @@
     <meta name="theme-color" content="#00a884">
     <style>
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: 'Segoe UI', Helvetica, sans-serif; background-color: #d1d7db; display: flex; height: 100vh; height: 100dvh; justify-content: center; align-items: center; overflow: hidden; position: relative;}
+        :root {
+            --bg-main: #d1d7db;
+            --bg-sidebar: #fff;
+            --bg-header: #f0f2f5;
+            --text-main: #111b21;
+            --text-preview: #667781;
+            --border-color: #d1d7db;
+            --chat-bg: #efeae2;
+            --msg-received: #fff;
+            --msg-sent: #d9fdd3;
+            --input-bg: #f0f2f5;
+            --accent-color: #B28DFF;
+        }
+
+        body.dark-theme {
+            --bg-main: #0b141a;
+            --bg-sidebar: #111b21;
+            --bg-header: #202c33;
+            --text-main: #e9edef;
+            --text-preview: #8696a0;
+            --border-color: #222d34;
+            --chat-bg: #0b141a;
+            --msg-received: #202c33;
+            --msg-sent: #005c4b;
+            --input-bg: #2a3942;
+            --accent-color: #B28DFF;
+        }
+
+        body { margin: 0; font-family: 'Segoe UI', Helvetica, sans-serif; background-color: var(--bg-main); display: flex; height: 100vh; height: 100dvh; justify-content: center; align-items: center; overflow: hidden; position: relative; transition: background 0.3s;}
 
         /* --- NATIVE APP FEEL --- */
         body { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
@@ -20,11 +48,11 @@
         
         /* Banner In-App */
         .banner-container { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; pointer-events: none;}
-        .in-app-banner { background: #fff; border-left: 5px solid #00a884; box-shadow: 0 4px 15px rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 12px; pointer-events: auto; animation: slideDown 0.3s ease forwards, fadeOut 0.5s ease 4s forwards; cursor: pointer;}
+        .in-app-banner { background: var(--bg-sidebar); border-left: 5px solid #B28DFF; box-shadow: 0 4px 15px rgba(0,0,0,0.2); padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 12px; pointer-events: auto; animation: slideDown 0.3s ease forwards, fadeOut 0.5s ease 4s forwards; cursor: pointer;}
         .in-app-banner img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
         .in-app-banner .b-info { flex: 1; }
-        .in-app-banner h4 { margin: 0 0 3px 0; font-size: 14px; color: #111b21; }
-        .in-app-banner p { margin: 0; font-size: 12px; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;}
+        .in-app-banner h4 { margin: 0 0 3px 0; font-size: 14px; color: var(--text-main); }
+        .in-app-banner p { margin: 0; font-size: 12px; color: var(--text-preview); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;}
         
         @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
@@ -40,40 +68,40 @@
 
         /* FAB & Dropdown */
         .fab-container { position: absolute; right: 20px; bottom: 85px; display: inline-block; z-index: 100; }
-        .dropdown-menu { display: none; position: absolute; right: 0; bottom: 50px; background-color: #fff; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 10; border-radius: 12px; width: 160px; overflow: hidden; animation: popIn 0.2s ease; }
+        .dropdown-menu { display: none; position: absolute; right: 0; bottom: 50px; background-color: var(--bg-sidebar); box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 10; border-radius: 12px; width: 160px; overflow: hidden; animation: popIn 0.2s ease; border: 1px solid var(--border-color); }
         .dropdown-menu.show { display: flex; flex-direction: column; }
-        .dropdown-item { padding: 12px 16px; display: flex; align-items: center; gap: 10px; text-decoration: none; color: #333; font-size: 14px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: 0.2s;}
-        .dropdown-item:hover { background-color: #f5f6f6; }
+        .dropdown-item { padding: 12px 16px; display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-main); font-size: 14px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: 0.2s;}
+        .dropdown-item:hover { background-color: var(--input-bg); }
         
-        .app-container { display: flex; width: 100%; max-width: 1400px; height: 100vh; height: 100dvh; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2); margin: 0 auto; position: relative; overflow: hidden; }
-        .sidebar { flex: 0 0 30%; min-width: 320px; border-right: 1px solid #d1d7db; display: flex; flex-direction: column; background: #fff; position: relative; height: 100%; overflow: hidden; }
-        .header { height: 60px; background-color: #f0f2f5; display: flex; align-items: center; padding: 0 15px; font-weight: 600; color: #41525d; border-bottom: 1px solid #ddd; flex-shrink: 0; }
+        .app-container { display: flex; width: 100%; max-width: 1400px; height: 100vh; height: 100dvh; background: var(--bg-sidebar); box-shadow: 0 2px 5px rgba(0,0,0,0.2); margin: 0 auto; position: relative; overflow: hidden; }
+        .sidebar { flex: 0 0 30%; min-width: 320px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: var(--bg-sidebar); position: relative; height: 100%; overflow: hidden; }
+        .header { height: 60px; background-color: var(--bg-header); display: flex; align-items: center; padding: 0 15px; font-weight: 600; color: var(--text-main); border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
         .tab-content-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; height: calc(100% - 65px); position: relative; }
         .tab-pane { display: none; flex-direction: column; height: 100%; position: relative; }
         .tab-pane.active { display: flex; }
 
-        .list-container { flex: 1; overflow-y: auto; }
-        .list-item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f2f2f2; cursor: pointer; position: relative;}
-        .list-item:hover { background-color: #f5f6f6; }
+        .list-container { flex: 1; overflow-y: auto; background-color: var(--bg-sidebar); }
+        .list-item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; position: relative;}
+        .list-item:hover { background-color: var(--input-bg); }
         .avatar { width: 45px; height: 45px; border-radius: 50%; background-color: #dfe5e7; margin-right: 15px; flex-shrink: 0; object-fit: cover; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #555; font-size: 20px;}
         
         /* Status Ring */
-        .status-ring { padding: 2px; border: 2px solid #00a884; border-radius: 50%; }
+        .status-ring { padding: 2px; border: 2px solid #B28DFF; border-radius: 50%; }
 
         .info { flex: 1; overflow: hidden; }
-        .name { font-weight: 500; font-size: 16px; margin: 0 0 3px 0; color: #111b21; }
-        .preview { font-size: 13px; color: #667781; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
-        .call-icon-indicator { font-size: 18px; color: #00a884; margin-left: auto; display:flex; align-items:center; }
+        .name { font-weight: 500; font-size: 16px; margin: 0 0 3px 0; color: var(--text-main); }
+        .preview { font-size: 13px; color: var(--text-preview); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
+        .call-icon-indicator { font-size: 18px; color: #B28DFF; margin-left: auto; display:flex; align-items:center; }
         
         .request-actions { display: flex; gap: 5px; }
-        .btn-acc { background: #00a884; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
-        .btn-rej { background: #d9534f; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        .btn-acc { background: #B28DFF; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        .btn-rej { background: #FFADAD; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
 
         /* Modern Bottom Tab Style */
-        .tab-nav { display: flex; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); height: 65px; flex-shrink: 0; width: 100%; z-index: 5; border-radius: 20px 20px 0 0; padding: 0 10px; }
-        .tab-btn { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: none; border: none; cursor: pointer; color: #a0aec0; font-size: 11px; font-weight: 600; gap: 4px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; margin: 5px; border-radius: 12px; }
-        .tab-btn:hover { background: #f7fafc; color: #718096; }
-        .tab-btn.active { color: #B28DFF; background: #f3ebff; transform: scale(1.05); }
+        .tab-nav { display: flex; background: var(--bg-sidebar); box-shadow: 0 -2px 10px rgba(0,0,0,0.05); height: 65px; flex-shrink: 0; width: 100%; z-index: 5; border-radius: 20px 20px 0 0; padding: 0 10px; border-top: 1px solid var(--border-color); }
+        .tab-btn { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: none; border: none; cursor: pointer; color: var(--text-preview); font-size: 11px; font-weight: 600; gap: 4px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; margin: 5px; border-radius: 12px; }
+        .tab-btn:hover { background: var(--input-bg); }
+        .tab-btn.active { color: #B28DFF; background: rgba(178, 141, 255, 0.15); transform: scale(1.05); }
         .tab-btn .icon svg { width: 22px; height: 22px; transition: all 0.3s ease; fill: currentColor; }
         .tab-btn.active .icon svg { transform: scale(1.15); stroke-width: 2.5; }
         .badge { position: absolute; top: 0px; right: 10px; background: #FFADAD; color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold; display: none; }
@@ -83,37 +111,37 @@
         .profile-btn { background: #B28DFF; color: white; padding: 12px 20px; border: none; border-radius: 12px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; font-size: 15px; transition: 0.2s;}
         .profile-btn:hover { opacity: 0.9; }
 
-        .chat-main { flex: 1 1 auto; display: flex; flex-direction: column; background-color: #f0f2f5; width: 100%; height: 100%; overflow: hidden; position: relative;}
-        #chat-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; text-align: center; color: #667781; background-color: #f0f2f5; }
-        #chat-empty-state h1 { font-weight: 300; margin-bottom: 10px; color: #41525d; }
-        #chat-active-state { display: none; flex-direction: column; height: 100%; width: 100%; background-color: #efeae2; }
+        .chat-main { flex: 1 1 auto; display: flex; flex-direction: column; background-color: var(--chat-bg); width: 100%; height: 100%; overflow: hidden; position: relative;}
+        #chat-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; text-align: center; color: var(--text-preview); background-color: var(--chat-bg); }
+        #chat-empty-state h1 { font-weight: 300; margin-bottom: 10px; color: var(--text-main); }
+        #chat-active-state { display: none; flex-direction: column; height: 100%; width: 100%; background-color: var(--chat-bg); }
         .header-actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
 
         .chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: cover; background-position: center; transition: background 0.3s; }
-        .message { max-width: 65%; padding: 8px 12px; border-radius: 7px; font-size: 14px; position: relative; line-height: 1.4; box-shadow: 0 1px 0.5px rgba(11,20,26,.13); word-wrap: break-word; }
-        .message.received { background-color: #fff; align-self: flex-start; border-top-left-radius: 0; }
-        .message.sent { background-color: #d9fdd3; align-self: flex-end; border-top-right-radius: 0; }
-        .msg-sender { font-size: 11px; font-weight: bold; color: #00766c; margin-bottom: 2px; }
+        .message { max-width: 65%; padding: 8px 12px; border-radius: 7px; font-size: 14px; position: relative; line-height: 1.4; box-shadow: 0 1px 0.5px rgba(11,20,26,.13); word-wrap: break-word; color: var(--text-main); }
+        .message.received { background-color: var(--msg-received); align-self: flex-start; border-top-left-radius: 0; }
+        .message.sent { background-color: var(--msg-sent); align-self: flex-end; border-top-right-radius: 0; }
+        .msg-sender { font-size: 11px; font-weight: bold; color: #B28DFF; margin-bottom: 2px; }
         .msg-time-container { display: flex; align-items: center; justify-content: flex-end; margin: 4px 0 -4px 10px; float: right; gap: 4px; }
-        .msg-time { font-size: 11px; color: #667781; }
+        .msg-time { font-size: 11px; color: var(--text-preview); }
         
-        .btn-delete-msg { display: none; background: #fff; color: #FFA6C9; border: 1px solid #FFC6FF; border-radius: 50%; width: 28px; height: 28px; position: absolute; top: -10px; right: -10px; cursor: pointer; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn-delete-msg { display: none; background: var(--bg-sidebar); color: #FFA6C9; border: 1px solid #FFC6FF; border-radius: 50%; width: 28px; height: 28px; position: absolute; top: -10px; right: -10px; cursor: pointer; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .message.sent:hover .btn-delete-msg { display: flex; }
 
-        .chat-input-area { background-color: #f0f2f5; display: flex; align-items: center; padding: 10px 15px; gap: 10px; flex-shrink: 0; position: relative;}
-        .chat-input-area input[type="text"] { flex: 1; border: none; padding: 12px 15px; border-radius: 8px; outline: none; font-size: 15px; }
+        .chat-input-area { background-color: var(--bg-header); display: flex; align-items: center; padding: 10px 15px; gap: 10px; flex-shrink: 0; position: relative; border-top: 1px solid var(--border-color);}
+        .chat-input-area input[type="text"] { flex: 1; border: none; padding: 12px 15px; border-radius: 8px; outline: none; font-size: 15px; background: var(--input-bg); color: var(--text-main); }
         .action-btn { background: none; border: none; cursor: pointer; padding: 5px; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
-        .action-btn:hover { background-color: #e9edef; }
-        .btn-send { background-color: #00a884; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .action-btn:hover { background-color: var(--border-color); }
+        .btn-send { background-color: #B28DFF; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         
         /* Modals */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(2px);}
-        .modal-box { background: white; width: 90%; max-width: 380px; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; max-height: 80vh; animation: popIn 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.2);}
-        .modal-header { padding: 15px; background: #00a884; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .modal-box { background: var(--bg-sidebar); color: var(--text-main); width: 90%; max-width: 380px; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; max-height: 80vh; animation: popIn 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 1px solid var(--border-color);}
+        .modal-header { padding: 15px; background: #B28DFF; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         .modal-close { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
         .modal-content { flex: 1; overflow-y: auto; padding: 15px; }
-        .modal-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; outline: none; margin-bottom: 15px; font-size: 15px; }
-        .modal-btn { width: 100%; background: #00a884; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .modal-input { width: 100%; padding: 12px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-main); border-radius: 8px; outline: none; margin-bottom: 15px; font-size: 15px; }
+        .modal-btn { width: 100%; background: #B28DFF; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
 
         /* Full Screen Media Modal (For Status) */
         .full-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: #000; z-index: 9999; display: none; flex-direction: column; color: white;}
@@ -130,40 +158,40 @@
         .theme-circle.active { border-color: #333; }
 
         .call-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.9); z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; }
-        .call-avatar { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 20px; object-fit: cover; border: 3px solid #00a884; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(0, 168, 132, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(0, 168, 132, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 168, 132, 0); } }
+        .call-avatar { width: 100px; height: 100px; border-radius: 50%; margin-bottom: 20px; object-fit: cover; border: 3px solid #B28DFF; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(178, 141, 255, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(178, 141, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(178, 141, 255, 0); } }
         .call-modal h2 { margin: 0 0 10px 0; font-size: 24px; font-weight: 500; }
         .call-actions { display: flex; gap: 30px; margin-top: 20px;}
         .btn-call { border: none; border-radius: 50%; width: 60px; height: 60px; font-size: 25px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; }
         .btn-call:hover { transform: scale(1.1); }
-        .btn-answer { background-color: #00a884; }
-        .btn-reject { background-color: #d9534f; }
+        .btn-answer { background-color: #97C1A9; }
+        .btn-reject { background-color: #FFADAD; }
 
         @media (max-width: 768px) {
             .sidebar { width: 100%; min-width: 100%; flex: 1; height: 100%; }
             .chat-main { position: absolute; top: 0; left: 100%; width: 100%; height: 100%; transition: left 0.3s ease; z-index: 10; }
             .chat-main.active-mobile { left: 0; }
-            #btn-back-mobile { display: block !important; margin-right: 15px; font-size: 20px; background: none; border: none; cursor: pointer; color: #54656f; }
+            #btn-back-mobile { display: block !important; margin-right: 15px; font-size: 20px; background: none; border: none; cursor: pointer; color: var(--text-main); }
         }
-        .badge-chat-count { background-color: #00a884; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; display: none; margin-left: auto; }
+        .badge-chat-count { background-color: #B28DFF; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; font-weight: bold; display: none; margin-left: auto; }
         #btn-back-mobile { display: none; }
         
-        .chat-item-wrapper { position: relative; overflow: hidden; border-bottom: 1px solid #f2f2f2; }
-        .chat-list-item { display: flex; align-items: center; padding: 12px 15px; background-color: #fff; cursor: pointer; position: relative; z-index: 2; transition: transform 0.2s ease; width: 100%; }
-        .chat-list-item:hover { background-color: #f5f6f6; }
+        .chat-item-wrapper { position: relative; overflow: hidden; border-bottom: 1px solid var(--border-color); }
+        .chat-list-item { display: flex; align-items: center; padding: 12px 15px; background-color: var(--bg-sidebar); cursor: pointer; position: relative; z-index: 2; transition: transform 0.2s ease; width: 100%; }
+        .chat-list-item:hover { background-color: var(--input-bg); }
         .chat-delete-action { position: absolute; right: 0; top: 0; height: 100%; background-color: #FFA6C9; color: white; display: flex; align-items: center; justify-content: center; width: 90px; font-weight: bold; font-size: 14px; z-index: 1; cursor: pointer; }
 
         /* Emoji & Sticker Box */
-        .emoji-picker-popup { position: absolute; bottom: 65px; left: 15px; width: 320px; height: 350px; background: #fff; box-shadow: 0 5px 25px rgba(0,0,0,0.15); border-radius: 12px; z-index: 50; display: none; flex-direction: column; overflow: hidden; animation: popIn 0.2s ease;}
-        .ep-tabs { display: flex; border-bottom: 1px solid #eee; background: #f9f9f9; }
-        .ep-tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-size: 14px; color: #667781; font-weight: 600; border-bottom: 2px solid transparent;}
+        .emoji-picker-popup { position: absolute; bottom: 65px; left: 15px; width: 320px; height: 350px; background: var(--bg-sidebar); box-shadow: 0 5px 25px rgba(0,0,0,0.15); border-radius: 12px; z-index: 50; display: none; flex-direction: column; overflow: hidden; animation: popIn 0.2s ease; border: 1px solid var(--border-color);}
+        .ep-tabs { display: flex; border-bottom: 1px solid var(--border-color); background: var(--bg-header); }
+        .ep-tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-size: 14px; color: var(--text-preview); font-weight: 600; border-bottom: 2px solid transparent;}
         .ep-tab.active { color: #B28DFF; border-bottom: 2px solid #B28DFF; }
         .ep-content { flex: 1; overflow-y: auto; padding: 15px; display: none; }
         .ep-content.active { display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; }
         .emoji-btn { font-size: 24px; cursor: pointer; padding: 5px; border-radius: 8px; transition: 0.1s; display: inline-flex; justify-content: center; align-items: center;}
-        .emoji-btn:hover { background: #eee; }
+        .emoji-btn:hover { background: var(--border-color); }
         .sticker-item { width: 60px; height: 60px; object-fit: contain; cursor: pointer; border-radius: 8px; position: relative;}
-        .sticker-item:hover { background: #f0f2f5; }
+        .sticker-item:hover { background: var(--input-bg); }
         .sticker-wrapper { position: relative; width: 60px; height: 60px; }
         .btn-delete-sticker { position: absolute; top: -5px; right: -5px; background: #FFA6C9; color: white; width: 18px; height: 18px; border-radius: 50%; display: none; font-size: 10px; border: none; cursor: pointer; align-items:center; justify-content:center;}
         .sticker-wrapper:hover .btn-delete-sticker { display: flex; }
@@ -180,12 +208,12 @@
         <div class="modal-box" style="text-align:center;">
             <div class="modal-header"><span>Profil Pengguna</span><button class="modal-close" onclick="document.getElementById('user-profile-modal').style.display='none'">✖</button></div>
             <div class="modal-content">
-                <img id="up-avatar" src="https://via.placeholder.com/100" style="width:120px; height:120px; border-radius:50%; margin:10px auto; object-fit:cover; border:3px solid #00a884;">
-                <h3 id="up-name" style="margin:10px 0 5px 0; color:#111b21;"></h3>
-                <p id="up-email" style="color:#667781; font-size:14px; margin:0 0 20px 0;"></p>
-                <div style="text-align:left; background:#f0f2f5; padding:15px; border-radius:8px;">
-                    <strong style="font-size:14px; color:#41525d; border-bottom: 1px solid #ddd; padding-bottom:5px; display:block; margin-bottom:8px;">👥 Grup Bersama:</strong>
-                    <div id="up-mutual-groups" style="font-size:14px; color:#111b21; max-height:100px; overflow-y:auto;">Memuat...</div>
+                <img id="up-avatar" src="https://via.placeholder.com/100" style="width:120px; height:120px; border-radius:50%; margin:10px auto; object-fit:cover; border:3px solid #B28DFF;">
+                <h3 id="up-name" style="margin:10px 0 5px 0;"></h3>
+                <p id="up-email" style="color:var(--text-preview); font-size:14px; margin:0 0 20px 0;"></p>
+                <div style="text-align:left; background:var(--input-bg); padding:15px; border-radius:8px;">
+                    <strong style="font-size:14px; color:var(--text-main); border-bottom: 1px solid var(--border-color); padding-bottom:5px; display:block; margin-bottom:8px;">👥 Grup Bersama:</strong>
+                    <div id="up-mutual-groups" style="font-size:14px; color:var(--text-main); max-height:100px; overflow-y:auto;">Memuat...</div>
                 </div>
             </div>
         </div>
@@ -196,7 +224,7 @@
         <div class="modal-box">
             <div class="modal-header"><span>Tambah Teman</span><button class="modal-close" onclick="document.getElementById('add-friend-modal').style.display='none'">✖</button></div>
             <div class="modal-content">
-                <p style="font-size:14px; color:#666; margin-top:0;">Masukkan email teman Anda untuk mengirim permintaan pertemanan.</p>
+                <p style="font-size:14px; color:var(--text-preview); margin-top:0;">Masukkan email teman Anda untuk mengirim permintaan pertemanan.</p>
                 <input type="email" id="add-email-input" class="modal-input" placeholder="Email teman..." autocomplete="off">
                 <button id="btn-add-contact" class="modal-btn">Kirim Permintaan</button>
             </div>
@@ -219,7 +247,7 @@
         <div class="modal-box">
             <div class="modal-header" style="background:#B28DFF;"><span>Pilih Wallpaper Chat</span><button class="modal-close" onclick="document.getElementById('wallpaper-modal').style.display='none'">✖</button></div>
             <div class="modal-content" style="text-align:center;">
-                <p style="font-size:13px; color:#666; margin-bottom:15px;">Pilih warna pastel atau unggah foto sendiri.</p>
+                <p style="font-size:13px; color:var(--text-preview); margin-bottom:15px;">Pilih warna pastel atau unggah foto sendiri.</p>
                 <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
                     <div class="theme-circle" style="background:#FFB5E8;" onclick="setWallpaper('#FFB5E8')"></div>
                     <div class="theme-circle" style="background:#B28DFF;" onclick="setWallpaper('#B28DFF')"></div>
@@ -244,13 +272,13 @@
                 <textarea id="status-text-input" class="modal-input" placeholder="Tulis sesuatu..." rows="4" style="resize:none; font-family:inherit; font-size:16px; border-radius:12px;"></textarea>
                 <div style="display:flex; gap:10px; margin-bottom:15px;">
                     <input type="file" id="status-media-input" accept="image/*,video/*" style="display:none;">
-                    <button class="modal-btn" style="background:#f0f2f5; color:#333; border:1px solid #ddd; border-radius: 12px; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="document.getElementById('status-media-input').click()">
+                    <button class="modal-btn" style="background:var(--input-bg); color:var(--text-main); border:1px solid var(--border-color); border-radius: 12px; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="document.getElementById('status-media-input').click()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B28DFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
                         Tambah Foto/Video
                     </button>
                 </div>
                 <div id="status-media-preview" style="display:none; margin-bottom:15px; text-align:center;">
-                    <span style="font-size:12px; color:#666; background:#f0f2f5; padding:5px 10px; border-radius:15px;" id="status-media-name">Media terpilih</span>
+                    <span style="font-size:12px; color:var(--text-preview); background:var(--input-bg); padding:5px 10px; border-radius:15px;" id="status-media-name">Media terpilih</span>
                 </div>
                 <button id="btn-submit-status" class="modal-btn" style="background:#B28DFF; border-radius: 12px;">Kirim Status</button>
             </div>
@@ -299,16 +327,15 @@
                 </div>
             </div>
             <div class="modal-content" style="padding:0; display:flex; flex-direction:column; max-height:60vh; overflow:hidden;">
-                <!-- Foto Grup -->
-                <div style="text-align: center; padding: 15px; background: #f0f2f5; border-bottom: 1px solid #ddd;">
-                    <img id="group-info-photo" src="https://via.placeholder.com/80" class="profile-avatar" title="Ketuk untuk ubah foto grup" style="width: 90px; height: 90px; margin: 0 auto; display: block; border-radius: 50%; cursor: pointer; object-fit: cover; border: 3px solid #00a884;">
+                <div style="text-align: center; padding: 15px; background: var(--bg-header); border-bottom: 1px solid var(--border-color);">
+                    <img id="group-info-photo" src="https://via.placeholder.com/80" class="profile-avatar" title="Ketuk untuk ubah foto grup" style="width: 90px; height: 90px; margin: 0 auto; display: block; border-radius: 50%; cursor: pointer; object-fit: cover; border: 3px solid #B28DFF;">
                     <input type="file" id="input-group-photo" style="display:none;" accept="image/*">
-                    <p style="font-size: 11px; color: #666; margin: 5px 0 0 0;">(Ketuk foto untuk mengubah)</p>
+                    <p style="font-size: 11px; color: var(--text-preview); margin: 5px 0 0 0;">(Ketuk foto untuk mengubah)</p>
                 </div>
                 <div id="group-members-list" style="flex:1; overflow-y:auto;"></div>
             </div>
-            <div style="padding: 15px; background: #f0f2f5; border-top: 1px solid #ddd; text-align: center;" id="group-admin-actions">
-                <button id="btn-delete-group" style="background: #d9534f; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;">Hapus Grup Ini</button>
+            <div style="padding: 15px; background: var(--bg-header); border-top: 1px solid var(--border-color); text-align: center;" id="group-admin-actions">
+                <button id="btn-delete-group" style="background: #FFADAD; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%;">Hapus Grup Ini</button>
             </div>
         </div>
     </div>
@@ -334,7 +361,7 @@
                 <div id="tab-contacts" class="tab-pane">
                     <div class="header"><span style="font-size: 20px; font-weight: bold;">Kontak</span></div>
                     
-                    <div id="friend-requests-container" style="background: #f5f6f6;"></div>
+                    <div id="friend-requests-container" style="background: var(--input-bg);"></div>
                     <div class="list-container" id="contact-list-container"></div>
 
                     <div class="fab-container">
@@ -355,16 +382,16 @@
                 <!-- Tab Status Baru -->
                 <div id="tab-status" class="tab-pane">
                     <div class="header"><span style="font-size: 20px; font-weight: bold;">Status</span></div>
-                    <div id="my-status-container" style="padding:15px; border-bottom:1px solid #ddd; display:flex; align-items:center; gap:15px; cursor:pointer; background: white;" onclick="openCreateStatusModal()">
-                        <div style="position:relative;">
+                    <div style="padding:15px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; gap:15px; background: var(--bg-sidebar);">
+                        <div id="my-status-click-area" style="position:relative; cursor:pointer; display:flex; align-items:center; flex:1;">
                             <img src="https://via.placeholder.com/45" id="my-status-avatar-preview" class="avatar" style="margin:0;">
-                            <div style="position:absolute; bottom:-2px; right:-2px; background:#CAFFBF; color:#333; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            </div>
+                            <div style="flex:1; margin-left:5px;"><p class="name">Status Saya</p><p class="preview" id="my-status-desc">Ketuk untuk melihat status</p></div>
                         </div>
-                        <div><p class="name">Status Saya</p><p class="preview">Ketuk untuk menambahkan status</p></div>
+                        <div id="btn-trigger-add-status" style="background:#CAFFBF; color:#333; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: 0.2s;" title="Buat Status Baru">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </div>
                     </div>
-                    <div style="padding:10px 15px; font-size:13px; color:#667781; font-weight:bold; background:#f0f2f5;">Pembaruan Terkini</div>
+                    <div style="padding:10px 15px; font-size:13px; color:var(--text-preview); font-weight:bold; background:var(--bg-header);">Pembaruan Terkini</div>
                     <div class="list-container" id="status-feed-container">
                         <p style="text-align:center; color:#888; font-size:14px; margin-top:20px;" id="empty-statuses">Tidak ada status baru.</p>
                     </div>
@@ -379,36 +406,36 @@
 
                 <div id="tab-profile" class="tab-pane">
                     <div class="header"><span style="font-size: 20px; font-weight: bold;">Pengaturan</span></div>
-                    <div class="profile-container" style="text-align: left; background: #f0f2f5; height: 100%; overflow-y: auto;">
+                    <div class="profile-container" style="text-align: left; background: var(--input-bg); height: 100%; overflow-y: auto;">
                         
                         <!-- Card Profil -->
-                        <div style="background: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <div style="background: var(--bg-sidebar); padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid var(--border-color);">
                             <input type="file" id="profile-photo-input" style="display: none;" accept="image/*">
                             <img src="https://via.placeholder.com/120" id="profile-avatar-preview" class="profile-avatar" title="Klik ganti foto" style="border-color: #B28DFF;">
-                            <p style="font-size: 12px; color: #667; margin-top: -5px;">(Klik foto untuk mengubah)</p>
-                            <div class="menu-row" style="margin-top: 15px;"><input type="text" id="profile-name-input" placeholder="Nama Tampilan" class="modal-input" style="text-align: center; border-radius: 20px; background: #f9f9f9; border: 1px solid #eee;"></div>
+                            <p style="font-size: 12px; color: var(--text-preview); margin-top: -5px;">(Klik foto untuk mengubah)</p>
+                            <div class="menu-row" style="margin-top: 15px;"><input type="text" id="profile-name-input" placeholder="Nama Tampilan" class="modal-input" style="text-align: center; border-radius: 20px;"></div>
                             <button id="btn-save-profile" class="profile-btn" style="background: #B28DFF; border-radius: 20px;">Simpan Profil</button>
                         </div>
 
                         <!-- Card Pengaturan -->
-                        <div style="background: white; padding: 15px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px;">
-                            <h4 style="margin: 0 0 15px 0; color: #41525d; font-size: 15px;">Tampilan</h4>
+                        <div style="background: var(--bg-sidebar); padding: 15px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid var(--border-color);">
+                            <h4 style="margin: 0 0 15px 0; color: var(--text-main); font-size: 15px;">Tampilan</h4>
                             
-                            <div id="btn-setting-wallpaper" style="display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f2f5; cursor: pointer;">
+                            <div id="btn-setting-wallpaper" style="display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); cursor: pointer;">
                                 <span style="background: #FFD6A5; padding: 8px; border-radius: 10px; margin-right: 12px; display:flex;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></span>
-                                <div style="flex: 1;"><p style="margin: 0; font-weight: 500; font-size: 14px; color: #111b21;">Wallpaper Obrolan</p><p style="margin: 0; font-size: 12px; color: #667781;">Ubah latar belakang chat</p></div>
+                                <div style="flex: 1;"><p style="margin: 0; font-weight: 500; font-size: 14px; color: var(--text-main);">Wallpaper Obrolan</p><p style="margin: 0; font-size: 12px; color: var(--text-preview);">Ubah latar belakang chat</p></div>
                                 <span style="color: #ccc;">❯</span>
                             </div>
 
-                            <div style="display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f2f5; cursor: pointer;">
+                            <div id="btn-toggle-theme-setting" style="display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); cursor: pointer;">
                                 <span style="background: #A0C4FF; padding: 8px; border-radius: 10px; margin-right: 12px; display:flex;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></span>
-                                <div style="flex: 1;"><p style="margin: 0; font-weight: 500; font-size: 14px; color: #111b21;">Tema Aplikasi</p><p style="margin: 0; font-size: 12px; color: #667781;">Terang / Gelap (Segera Hadir)</p></div>
+                                <div style="flex: 1;"><p style="margin: 0; font-weight: 500; font-size: 14px; color: var(--text-main);">Tema Gelap / Terang</p><p style="margin: 0; font-size: 12px; color: var(--text-preview);" id="theme-desc-text">Alihkan mode tampilan</p></div>
                                 <span style="color: #ccc;">❯</span>
                             </div>
                             
                             <div style="display: flex; align-items: center; padding: 12px 0; cursor: pointer;">
                                 <span style="background: #CAFFBF; padding: 8px; border-radius: 10px; margin-right: 12px; display:flex;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.26l5.42 5.42"></path></svg></span>
-                                <div style="flex: 1;"><p style="margin: 0; font-weight: 500; font-size: 14px; color: #111b21;">Pembaruan</p><p style="margin: 0; font-size: 12px; color: #667781;">Cek fitur terbaru (Segera Hadir)</p></div>
+                                <div style="flex: 1;"><p style="margin: 0; font-weight: 500; font-size: 14px; color: var(--text-main);">Pembaruan</p><p style="margin: 0; font-size: 12px; color: var(--text-preview);">Cek fitur terbaru (Segera Hadir)</p></div>
                                 <span style="color: #ccc;">❯</span>
                             </div>
                         </div>
@@ -599,6 +626,30 @@
             banner.addEventListener('click', () => banner.remove());
             bannerContainer.appendChild(banner);
             setTimeout(() => { if(bannerContainer.contains(banner)) banner.remove(); }, 4500);
+        }
+
+        // ================= TEMA (DARK/LIGHT MODE) =================
+        function applyTheme(isDark) {
+            if (isDark) {
+                document.body.classList.add('dark-theme');
+                document.getElementById('theme-desc-text').innerText = "Mode Gelap Aktif";
+                localStorage.setItem('app_theme', 'dark');
+            } else {
+                document.body.classList.remove('dark-theme');
+                document.getElementById('theme-desc-text').innerText = "Mode Terang Aktif";
+                localStorage.setItem('app_theme', 'light');
+            }
+        }
+
+        document.getElementById('btn-toggle-theme-setting').addEventListener('click', () => {
+            const isDark = !document.body.classList.contains('dark-theme');
+            applyTheme(isDark);
+        });
+
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem('app_theme');
+            if (savedTheme === 'dark') applyTheme(true);
+            else applyTheme(false);
         }
 
         // ================= WALLPAPER CHAT =================
@@ -803,7 +854,7 @@
                 document.getElementById('my-status-avatar-preview').src = user.photoURL || 'https://via.placeholder.com/45';
                 document.getElementById('profile-name-input').value = user.displayName || '';
                 await setDoc(doc(db, "users", user.uid), { uid: user.uid, name: user.displayName, email: user.email, photoURL: user.photoURL }, { merge: true });
-                requestNotificationPermission(); loadSidebarItems(); listenForIncomingCalls(); listenForFriendRequests(); listenForCallHistory(); loadPersonalStickers(); loadSavedWallpaper(); listenForStatuses();
+                requestNotificationPermission(); loadSidebarItems(); listenForIncomingCalls(); listenForFriendRequests(); listenForCallHistory(); loadPersonalStickers(); loadSavedWallpaper(); loadSavedTheme(); listenForStatuses();
             } else { currentUser = null; loginScreen.classList.remove('hidden'); appContainer.classList.add('hidden'); }
         });
 
@@ -817,12 +868,23 @@
             } catch(e) {}
         }
 
-        // ================= STATUS SYSTEM =================
+        // ================= STATUS SYSTEM (DIPISAH) =================
         let myContactsIds = [];
-        
-        window.openCreateStatusModal = function() {
+        let myCurrentStatuses = [];
+
+        // Tombol + Membuka Modal Pembuatan Status Baru
+        document.getElementById('btn-trigger-add-status').addEventListener('click', () => {
             document.getElementById('create-status-modal').style.display = 'flex';
-        };
+        });
+
+        // Bagian Teks/Avatar "Status Saya" Membuka Viewer Status Sendiri (jika ada)
+        document.getElementById('my-status-click-area').addEventListener('click', () => {
+            if (myCurrentStatuses.length > 0) {
+                openStatusViewer(myCurrentStatuses);
+            } else {
+                document.getElementById('create-status-modal').style.display = 'flex';
+            }
+        });
 
         document.getElementById('status-media-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -915,13 +977,17 @@
                         emptyFeed.style.display = 'block';
                     }
 
-                    if (userStatuses[currentUser.uid]) {
-                        const myRing = document.getElementById('my-status-avatar-preview');
+                    // Handle status saya
+                    const myRing = document.getElementById('my-status-avatar-preview');
+                    const myDesc = document.getElementById('my-status-desc');
+                    if (userStatuses[currentUser.uid] && userStatuses[currentUser.uid].length > 0) {
+                        myCurrentStatuses = userStatuses[currentUser.uid];
                         myRing.classList.add('status-ring');
-                        document.getElementById('my-status-container').onclick = () => openStatusViewer(userStatuses[currentUser.uid]);
+                        myDesc.innerText = `${myCurrentStatuses.length} status aktif (ketuk untuk lihat)`;
                     } else {
-                        document.getElementById('my-status-avatar-preview').classList.remove('status-ring');
-                        document.getElementById('my-status-container').onclick = openCreateStatusModal;
+                        myCurrentStatuses = [];
+                        myRing.classList.remove('status-ring');
+                        myDesc.innerText = 'Ketuk untuk menambahkan status';
                     }
                 });
             });
@@ -1181,7 +1247,7 @@
                 avatarHtml = `<img src="${photo || 'https://via.placeholder.com/45'}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">`;
             }
 
-            document.getElementById('chat-main-header').innerHTML = `${avatarHtml} <div style="display:flex; flex-direction:column; line-height:1.2;"><span style="font-weight:bold; font-size: 16px; color:#111b21;">${name}</span><span style="font-size:11px; color:#667781;">${type === 'group' ? 'Ketuk untuk info grup' : 'Ketuk untuk info profil'}</span></div>`;
+            document.getElementById('chat-main-header').innerHTML = `${avatarHtml} <div style="display:flex; flex-direction:column; line-height:1.2;"><span style="font-weight:bold; font-size: 16px; color:var(--text-main);">${name}</span><span style="font-size:11px; color:var(--text-preview);">${type === 'group' ? 'Ketuk untuk info grup' : 'Ketuk untuk info profil'}</span></div>`;
             if (window.innerWidth <= 768) document.getElementById('chat-main-area').classList.add('active-mobile');
             loadChatRoom(id, type);
         }
@@ -1302,7 +1368,7 @@
                     if (memberId !== currentUser.uid) {
                         const checkContact = await getDoc(doc(db, "users", currentUser.uid, "contacts", memberId));
                         if (!checkContact.exists()) {
-                            btnAddFriendHtml = `<button class="btn-direct-add-friend" data-uid="${memberId}" data-email="${uData.email}" style="background:#f0f2f5; color:#00a884; border:1px solid #00a884; padding:2px 8px; border-radius:12px; font-size:10px; cursor:pointer; font-weight:bold; margin-left:5px;">+ Teman</button>`;
+                            btnAddFriendHtml = `<button class="btn-direct-add-friend" data-uid="${memberId}" data-email="${uData.email}" style="background:var(--input-bg); color:#B28DFF; border:1px solid #B28DFF; padding:2px 8px; border-radius:12px; font-size:10px; cursor:pointer; font-weight:bold; margin-left:5px;">+ Teman</button>`;
                         }
                     }
 
@@ -1314,7 +1380,7 @@
                                 <p class="name" style="margin:0;">${uData.name} ${memberId === currentUser.uid ? '(Anda)' : ''}</p>
                                 ${btnAddFriendHtml}
                             </div>
-                            <p class="preview" style="color: ${isThisAdmin ? '#00a884' : '#667781'}; margin:0;">${isThisAdmin ? 'Admin' : 'Anggota'}</p>
+                            <p class="preview" style="color: ${isThisAdmin ? '#B28DFF' : 'var(--text-preview)'}; margin:0;">${isThisAdmin ? 'Admin' : 'Anggota'}</p>
                         </div>
                     `;
                     
@@ -1323,7 +1389,7 @@
                             e.target.innerHTML = "⏳"; e.target.disabled = true;
                             await setDoc(doc(db, "users", memberId, "friend_requests", currentUser.uid), { uid: currentUser.uid, name: currentUser.displayName, email: currentUser.email, photoURL: currentUser.photoURL, timestamp: serverTimestamp() });
                             e.target.innerHTML = "Terkirim";
-                            e.target.style.background = "#00a884"; e.target.style.color = "white";
+                            e.target.style.background = "#B28DFF"; e.target.style.color = "white";
                         });
                     }
 
@@ -1403,12 +1469,12 @@
                     
                     let callStatusIcon = isOutgoing ? '↗️' : (isMissed ? '↙️ (Missed)' : '↙️');
                     let callTypeIcon = data.callMode === 'video' ? '📹' : '📞';
-                    let textColor = isMissed ? 'color: #d9534f;' : 'color: #667781;';
+                    let textColor = isMissed ? 'color: #FFADAD;' : 'color: var(--text-preview);';
                     
                     div.innerHTML = `
                         <div class="avatar" style="background:#dfe5e7;">${targetName.charAt(0)}</div>
                         <div class="info">
-                            <p class="name" style="${isMissed ? 'color: #d9534f;' : ''}">${targetName}</p>
+                            <p class="name" style="${isMissed ? 'color: #FFADAD;' : ''}">${targetName}</p>
                             <p class="preview" style="${textColor}">${callStatusIcon} ${timeStr}</p>
                         </div>
                         <div class="call-icon-indicator">${callTypeIcon}</div>
@@ -1441,7 +1507,7 @@
             });
         }
 
-        // ================= WEBRTC PANGGILAN (MODIFIKASI RING GROUP & RACE CONDITION) =================
+        // ================= WEBRTC PANGGILAN =================
         const servers = { iceServers: [{ urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }] };
         let pc = null; let localStream = null; let callSnapshotUnsub = null;
         let callerIceQueue = [];
